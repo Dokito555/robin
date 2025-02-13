@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	model "github.com/Dokito555/robin-ums/internal/models"
+	model "github.com/Dokito555/robin-ums/internal/model"
 	"github.com/Dokito555/robin-ums/internal/services"
 	"github.com/gin-gonic/gin"
 )

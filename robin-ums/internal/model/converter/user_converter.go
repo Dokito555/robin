@@ -2,7 +2,7 @@ package converter
 
 import (
 	"github.com/Dokito555/robin-ums/internal/entity"
-	model "github.com/Dokito555/robin-ums/internal/models"
+	model "github.com/Dokito555/robin-ums/internal/model"
 )
 
 func UserToResponse(user *entity.User) *model.UserResponse {

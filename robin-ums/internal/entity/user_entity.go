@@ -6,6 +6,7 @@ type User struct {
 	ID           int    `gorm:"column:id;type:primaryKey"`
 	UserName     string `gorm:"column:username;type:varchar(255)"`
 	Email        string `gorm:"column:email;unique"`
+	Password     string `gorm:"column:password"`
 	Role         string `gorm:"column:role"`
 	Token        string `gorm:"column:token"`
 	RefreshToken string `gorm:"column:refresh_token"`
