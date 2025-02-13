@@ -1,5 +1,7 @@
 package main
 
+import "github.com/Dokito555/robin-ums/internal/config"
+
 func main() {
 	// init configs
 	viperConfig := config.NewViper()

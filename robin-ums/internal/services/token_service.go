@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	model "github.com/Dokito555/robin-ums/internal/models"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"

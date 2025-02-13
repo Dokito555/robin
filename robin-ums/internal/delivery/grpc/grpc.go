@@ -3,6 +3,7 @@ package grpc
 import (
 	"net"
 
+	token_validation_proto "github.com/Dokito555/robin-ums/internal/delivery/grpc/proto/token"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
