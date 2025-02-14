@@ -34,8 +34,8 @@ func NewArtistService(db *gorm.DB, logger *logrus.Logger, validate *validator.Va
 	}
 }
 
-func (s *ArtistService) RegisterArtist(ctx context.Context, req *model.RegisterArtistRequest) (*model.UserResponse, error) {
-	s.Log.Info("starting Register function")
+func (s *ArtistService) RegisterArtist(ctx context.Context, req *model.RegisterArtistRequest) (*model.ArtistResponse, error) {
+	s.Log.Info("starting Register Artist function")
 	s.Log.Infof("request received: %+v", req)
 
 	tx := s.DB.WithContext(ctx).Begin()
@@ -89,10 +89,65 @@ func (s *ArtistService) RegisterArtist(ctx context.Context, req *model.RegisterA
 }
 
 func (s *ArtistService) LoginArtist(ctx context.Context, req *model.LoginArtistRequest) (*model.ArtistResponse, error) {
-	return nil, nil
+	s.Log.Info("starting Login Artist function")
+	s.Log.Infof("request received: %+v", req)
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return nil, errors.New(constants.BAD_REQUEST)
+	}
+
+	if req.Password == "" || req.Email == "" {
+		return nil, errors.New("password or email is empty")
+	}
+
+	newArtist := new(entity.Artist)
+	artist, err := s.ArtistRepository.FindByEmail(s.DB, newArtist, req.Email)
+	if err != nil {
+		s.Log.Warnf("database error fetching artist: %+v", err)
+		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(artist.Password), []byte(req.Password)); err != nil {
+		s.Log.Warnf("failed to compare hashed password: %+v", err)
+		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+	}
+
+	token, err := s.TokenService.GenerateToken(ctx, artist.ID, constants.TOKEN_TYPE_TOKEN, artist.Email, artist.Role)
+	if err != nil {
+		s.Log.Warnf("failed to genereate token: %+v", err)
+		return nil, err
+	}
+
+	refreshToken, err := s.TokenService.GenerateToken(ctx, artist.ID, constants.TOKEN_TYPE_REFRESH, artist.Email, artist.Role)
+	if err != nil {
+		s.Log.Warnf("failed to genereate refresh token: %+v", err)
+		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+	}
+
+	newArtist.Token = token
+	newArtist.RefreshToken = refreshToken
+
+	err = s.ArtistRepository.Update(s.DB, newArtist)
+	if err != nil {
+		s.Log.Warnf("failed to update user token and refresh token: %+v", err)
+		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+	}
+
+	return converter.ArtistToReponse(newArtist), nil
 }
 
 func (s *ArtistService) UpdateArtist(ctx context.Context, req *model.UpdateArtistRequest) (*model.ArtistResponse, error) {
+	
 	return nil, nil
 }
 

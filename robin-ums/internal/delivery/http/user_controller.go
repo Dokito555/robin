@@ -144,6 +144,43 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.UserResponse]{Message: http.StatusOK, Data: rsp})
 }
 
+func (c *UserController) DeleteUser(ctx *gin.Context) {
+	req := new(model.DeleteUserRequest)
+	auth := middleware.GetProfile(ctx)
+	idStr := ctx.Param("id")
+
+	if auth.Role != constants.ROLE_ADMIN {
+		c.Log.Warnf("unauthorized access")
+		ctx.JSON(http.StatusUnauthorized, gin.H{"Message": ""})
+		return
+	}
+
+	if idStr == "" {
+		c.Log.Warnf("id is empty")
+		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "id is empty"})
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert id string to int")
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
+	req.ID = id
+
+	err = c.Service.DeleteUser(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to get user: %v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.UserResponse]{Message: http.StatusOK, Data: nil})
+}
+
+
 func (c *UserController) VerifyUser(ctx *gin.Context) {
 	auth := middleware.GetProfile(ctx)
 

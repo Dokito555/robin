@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Dokito555/robin-ums/internal/delivery/grpc"
 	"github.com/Dokito555/robin-ums/internal/delivery/http"
 	"github.com/Dokito555/robin-ums/internal/delivery/http/middleware"
 	"github.com/Dokito555/robin-ums/internal/delivery/http/route"
@@ -24,22 +25,38 @@ type BootstrapConfig struct {
 func Bootstrap(config *BootstrapConfig) {
 	// setup repo
 	userRepository := repository.NewUserRepository(config.Log, config.DB)
+	artistRepository := repository.NewAristRepository(config.Log, config.DB)
 
 	// setup services
 	tokenService := services.NewTokenService(config.Log, config.Config)
 	userService := services.NewUserService(config.DB, config.Log, config.Validate, userRepository, tokenService)
+	artistService := services.NewArtistService(config.DB, config.Log, config.Validate, artistRepository, tokenService)
 
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)
+	userController := http.NewUserController(config.Log, userService)
+	artistController := http.NewArtistController(config.Log, artistService)
+	tokenValidationController := grpc.NewTokenValidationController(tokenService, config.Log)
 
 	// setup middleware
 	middleware := middleware.NewAuth(userService, tokenService)
 
 	// route config
 	routeConfig := route.RouteConfig{
-		App: config.App,
+		App:              config.App,
 		HealthController: healthController,
-		AuthMiddleware: middleware,
+		UserController:   userController,
+		ArtistController: artistController,
+		AuthMiddleware:   middleware,
 	}
+
+	// grpc config
+	grpcConfig := grpc.GrpcConfig{
+		Log:                       config.Log,
+		Viper:                     config.Config,
+		TokenValidationController: tokenValidationController,
+	}
+
 	routeConfig.Setup()
+	go grpcConfig.Setup()
 }

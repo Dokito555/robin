@@ -20,13 +20,17 @@ func (c *RouteConfig) Setup() {
 
 func (c *RouteConfig) SetupGuestRoute() {
 	c.App.GET("/api/healthcheck", c.HealthController.Healthcheck)
-	c.App.POST("/api/v1/user/register")
-	c.App.POST("/api/v1/user/admin/register")
-	c.App.POST("/api/v1/user/login")
+	c.App.POST("/api/v1/user/register", c.UserController.RegisterUser)
+	c.App.POST("/api/v1/user/admin/register", c.UserController.RegisterAdmin)
+	c.App.POST("/api/v1/user/login", c.UserController.Login)
+	c.App.GET("/api/v1/user/:id", c.UserController.GetUser)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
 	c.App.Use(c.AuthMiddleware)
-	c.App.DELETE("/api/v1/user/logout")
-	c.App.DELETE("/api/v1/user/delete")
+	c.App.DELETE("/api/v1/user/logout", c.UserController.Logout)
+	c.App.DELETE("/api/v1/user/delete/:id", c.UserController.DeleteUser)
 }
+
+// TODO: exclusive admin route
+// func (c *RouteConfig) SetupAdminRoute() {}

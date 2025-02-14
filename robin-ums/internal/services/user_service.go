@@ -147,6 +147,8 @@ func (s *UserService) Login(ctx context.Context, req *model.LoginUserRequest) (*
 }
 
 func (s *UserService) Logout(ctx context.Context, req *model.LogoutUserRequest) error {
+	s.Log.Info("starting Logout function")
+	s.Log.Infof("request received: %+v", req)
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -180,6 +182,8 @@ func (s *UserService) Logout(ctx context.Context, req *model.LogoutUserRequest) 
 }
 
 func (s *UserService) GetUser(ctx context.Context, req *model.GetUserRequest) (*model.UserResponse, error) {
+	s.Log.Info("starting Get User function")
+	s.Log.Infof("request received: %+v", req)
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -207,6 +211,8 @@ func (s *UserService) GetUser(ctx context.Context, req *model.GetUserRequest) (*
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, req *model.DeleteUserRequest) error {
+	s.Log.Info("starting Delete User function")
+	s.Log.Infof("request received: %+v", req)
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -243,6 +249,8 @@ func (s *UserService) DeleteUser(ctx context.Context, req *model.DeleteUserReque
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserRequest) (*model.UserResponse, error) {
+	s.Log.Info("starting Update User function")
+	s.Log.Infof("request received: %+v", req)
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -282,6 +290,8 @@ func (s *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserReque
 }
 
 func (s *UserService) Verify(ctx context.Context, req *model.VerifyRequest) (*model.UserResponse, error) {
+	s.Log.Info("starting Verify function")
+	s.Log.Infof("request received: %+v", req)
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 

@@ -11,7 +11,7 @@ type (
 	RegisterUserRequest struct {
 		Email    string `json:"email" validate:"required"`
 		Password string `json:"password" validate:"required"`
-		Username string `json:"username" validate:"username"`
+		Username string `json:"username" validate:"required"`
 		Role     string `json:"role" validate:"required"`
 	}
 
@@ -21,7 +21,7 @@ type (
 
 	UpdateUserRequest struct {
 		Password string `json:"password" validate:"required"`
-		Username string `json:"username" validate:"username"`
+		Username string `json:"username" validate:"required"`
 	}
 
 	LogoutUserRequest struct {

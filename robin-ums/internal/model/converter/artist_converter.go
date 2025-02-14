@@ -5,12 +5,14 @@ import (
 	model "github.com/Dokito555/robin-ums/internal/model"
 )
 
-func ArtistToReponse(artist *entity.Artist) *model.UserResponse {
-	return &model.UserResponse{
+func ArtistToReponse(artist *entity.Artist) *model.ArtistResponse {
+	return &model.ArtistResponse{
 		ID:           artist.ID,
 		Email:        artist.Email,
 		UserName:     artist.UserName,
 		Role:         artist.Role,
+		Bio:          artist.Bio,
+		Genre:        artist.Genre,
 		Token:        artist.Token,
 		RefreshToken: artist.RefreshToken,
 		CreatedAt:    artist.CreatedAt,

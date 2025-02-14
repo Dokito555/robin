@@ -3,9 +3,10 @@ package config
 import (
 	"fmt"
 	"os"
-	"time"
 	"strconv"
+	"time"
 
+	"github.com/Dokito555/robin-ums/internal/entity"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
@@ -41,6 +42,15 @@ func NewDatabase(viper *viper.Viper, log *logrus.Logger) *gorm.DB {
 	})
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
+		os.Exit(1)
+	}
+
+	err = db.AutoMigrate(
+		&entity.User{},
+		&entity.Artist{},
+	)
+	if err != nil {
+		log.Fatalf("failed to auto-migrate: %v", err)
 		os.Exit(1)
 	}
 	
