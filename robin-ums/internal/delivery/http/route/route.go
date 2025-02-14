@@ -24,12 +24,21 @@ func (c *RouteConfig) SetupGuestRoute() {
 	c.App.POST("/api/v1/user/admin/register", c.UserController.RegisterAdmin)
 	c.App.POST("/api/v1/user/login", c.UserController.Login)
 	c.App.GET("/api/v1/user/:id", c.UserController.GetUser)
+
+	c.App.POST("/api/v1/artist/register", c.ArtistController.RegisterArtist)
+	c.App.POST("/api/v1/artist/login", c.ArtistController.LoginArtist)
+	c.App.GET("/api/v1/artist/:id", c.ArtistController.GetArtist)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
 	c.App.Use(c.AuthMiddleware)
 	c.App.DELETE("/api/v1/user/logout", c.UserController.Logout)
 	c.App.DELETE("/api/v1/user/delete/:id", c.UserController.DeleteUser)
+	c.App.PUT("/api/v1/user/update", c.UserController.UpdateUser)
+
+	c.App.PUT("/api/v1/artist/update", c.ArtistController.UpdateArtist)
+	c.App.DELETE("/api/v1/artist/delete/:id", c.ArtistController.DeleteArtist)
+	c.App.DELETE("/api/v1/artist/logout", c.ArtistController.LogoutArtist)
 }
 
 // TODO: exclusive admin route

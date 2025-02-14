@@ -26,10 +26,11 @@ type (
 	}
 
 	LogoutArtistRequest struct {
-		ID int `json:"id" validate:"required"`
+		Token string `json:"token" validate:"required"`
 	}
 
 	UpdateArtistRequest struct {
+		UserName string `json:"username" validate:"required"`
 		Password string `json:"password" validate:"required"`
 		Genre    string `json:"genre" validate:"required"`
 		Bio      string `json:"bio" validate:"required"`

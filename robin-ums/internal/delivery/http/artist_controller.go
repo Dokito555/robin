@@ -1,7 +1,14 @@
 package http
 
 import (
+	"net/http"
+	"strconv"
+
+	"github.com/Dokito555/robin-ums/constants"
+	"github.com/Dokito555/robin-ums/internal/delivery/http/middleware"
+	"github.com/Dokito555/robin-ums/internal/model"
 	"github.com/Dokito555/robin-ums/internal/services"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,4 +22,146 @@ func NewArtistController(log *logrus.Logger, service *services.ArtistService) *A
 		Log:     log,
 		Service: service,
 	}
+}
+
+func (c *ArtistController) RegisterArtist(ctx *gin.Context) {
+	req := new(model.RegisterArtistRequest)
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		c.Log.Warnf("failed to bind request to JSON: %+v", err)
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	if req.Role == constants.ROLE_ADMIN {
+		c.Log.Warnf("failed to register as admin")
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	rsp, err := c.Service.RegisterArtist(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to register artist: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
+	return
+}
+
+func (c *ArtistController) LoginArtist(ctx *gin.Context) {
+	req := new(model.LoginArtistRequest)
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		c.Log.Warnf("failed to bind request to JSON: %+v", err)
+		ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	rsp, err := c.Service.LoginArtist(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to login artist: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
+	return
+}
+
+func (c *ArtistController) GetArtist(ctx *gin.Context) {
+	req := new(model.GetArtistRequest)
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		c.Log.Warnf("failed to bind request to JSON: %+v", err)
+		ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	rsp, err := c.Service.GetArtist(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to get artist: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
+	return
+}
+
+func (c *ArtistController) UpdateArtist(ctx *gin.Context) {
+	req := new(model.UpdateArtistRequest)
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		c.Log.Warnf("failed to bind request to JSON: %+v", err)
+		ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	rsp, err := c.Service.UpdateArtist(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to get artist: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
+	return
+}
+
+func (c *ArtistController) LogoutArtist(ctx *gin.Context) {
+	req := new(model.LogoutArtistRequest)
+	token := ctx.GetHeader("Authorization")
+	if token == "" {
+		c.Log.Warnf("token is empty")
+		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "unauthorized"})
+		return
+	}
+
+	req.Token = token
+
+	err := c.Service.LogoutArtist(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to logout artist: %v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: nil})
+	return
+}
+
+func (c *ArtistController) DeleteArtist(ctx *gin.Context) {
+	req := new(model.DeleteArtistRequest)
+	auth := middleware.GetProfile(ctx)
+	idStr := ctx.Param("id")
+
+	if auth.Role != constants.ROLE_ADMIN {
+		c.Log.Warnf("unauthorized access")
+		ctx.JSON(http.StatusUnauthorized, gin.H{"Message": ""})
+		return
+	}
+
+	if idStr == "" {
+		c.Log.Warnf("id is empty")
+		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "id is empty"})
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert id string to int")
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
+	req.ID = id
+
+	err = c.Service.DeleteArtist(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to get user: %v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: nil})
+	return
 }

@@ -200,3 +200,22 @@ func (c *UserController) VerifyUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, rsp)
 }
+
+func (c *UserController) UpdateUser(ctx *gin.Context) {
+	req := new(model.UpdateUserRequest)
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		c.Log.Warnf("failed to bind request to JSON: %+v", err)
+		ctx.JSON(http.StatusBadRequest, err)
+	}
+
+	rsp, err := c.Service.UpdateUser(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to login user: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.UserResponse]{Message: http.StatusOK, Data: rsp})
+	return
+}
