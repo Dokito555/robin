@@ -87,3 +87,23 @@ func (s *ArtistService) RegisterArtist(ctx context.Context, req *model.RegisterA
 
 	return converter.ArtistToReponse(artist), nil
 }
+
+func (s *ArtistService) LoginArtist(ctx context.Context, req *model.LoginArtistRequest) (*model.ArtistResponse, error) {
+	return nil, nil
+}
+
+func (s *ArtistService) UpdateArtist(ctx context.Context, req *model.UpdateArtistRequest) (*model.ArtistResponse, error) {
+	return nil, nil
+}
+
+func (s *ArtistService) LogoutArtist(ctx context.Context, req *model.LogoutArtistRequest) (error) {
+	return nil
+}
+
+func (s *ArtistService) GetArtist(ctx context.Context, req *model.GetArtistRequest) (*model.ArtistResponse, error) {
+	return nil, nil
+}
+
+func (s *ArtistService) DeleteArtist(ctx context.Context, req *model.DeleteArtistRequest) (error) {
+	return nil
+}

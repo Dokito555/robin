@@ -16,7 +16,7 @@ type (
 	}
 
 	GetUserRequest struct {
-		Id string `json:"id" validate:"required"`
+		ID int `json:"id" validate:"required"`
 	}
 
 	UpdateUserRequest struct {
@@ -29,10 +29,10 @@ type (
 	}
 
 	DeleteUserRequest struct {
-		Id string `json:"id" validate:"required"`
+		ID int `json:"id" validate:"required"`
 	}
 
-	VerifyUserRequest struct {
+	VerifyRequest struct {
 		Token string `json:"token"`
 	}
 )

@@ -11,6 +11,29 @@ type (
 		Bio      string `json:"bio" validate:"required"`
 		Role     string `json:"role" validate:"required"`
 	}
+
+	LoginArtistRequest struct {
+		Email    string `json:"email" validate:"required"`
+		Password string `json:"password" validate:"required"`
+	}
+
+	GetArtistRequest struct {
+		ID int `json:"id" validate:"required"`
+	}
+
+	DeleteArtistRequest struct {
+		ID int `json:"id" validate:"required"`
+	}
+
+	LogoutArtistRequest struct {
+		ID int `json:"id" validate:"required"`
+	}
+
+	UpdateArtistRequest struct {
+		Password string `json:"password" validate:"required"`
+		Genre    string `json:"genre" validate:"required"`
+		Bio      string `json:"bio" validate:"required"`
+	}
 )
 
 type (

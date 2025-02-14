@@ -146,7 +146,7 @@ func (s *UserService) Login(ctx context.Context, req *model.LoginUserRequest) (*
 	return converter.UserToResponse(newUser), nil
 }
 
-func (s *UserService) Logout(ctx context.Context, req *model.LogoutUserRequest) (error) {
+func (s *UserService) Logout(ctx context.Context, req *model.LogoutUserRequest) error {
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -190,7 +190,7 @@ func (s *UserService) GetUser(ctx context.Context, req *model.GetUserRequest) (*
 	}
 
 	user := new(entity.User)
-	if err := s.UserRepository.FindById(s.DB, user, req.Id); err != nil {
+	if err := s.UserRepository.FindById(s.DB, user, req.ID); err != nil {
 		s.Log.Warnf("failed to find user in database: %+v", err)
 		return nil, errors.New(constants.NOT_FOUND)
 	}
@@ -206,7 +206,7 @@ func (s *UserService) GetUser(ctx context.Context, req *model.GetUserRequest) (*
 	return converter.UserToResponse(user), nil
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, req *model.DeleteUserRequest) (error) {
+func (s *UserService) DeleteUser(ctx context.Context, req *model.DeleteUserRequest) error {
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
@@ -217,7 +217,7 @@ func (s *UserService) DeleteUser(ctx context.Context, req *model.DeleteUserReque
 	}
 
 	user := new(entity.User)
-	err = s.UserRepository.FindById(tx, user, req.Id)
+	err = s.UserRepository.FindById(tx, user, req.ID)
 	if err != nil {
 		s.Log.Warnf("failed to find user by token : %+v", err)
 		return errors.New(constants.INTERNAL_SERVER_ERROR)
@@ -227,7 +227,7 @@ func (s *UserService) DeleteUser(ctx context.Context, req *model.DeleteUserReque
 		s.Log.Warnf("user not found: %+v", err)
 		return errors.New(constants.NOT_FOUND)
 	}
-	
+
 	err = s.UserRepository.Delete(s.DB, user)
 	if err != nil {
 		s.Log.Warnf("failed to delete user by token : %+v", err)
@@ -281,7 +281,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserReque
 	return converter.UserToResponse(user), nil
 }
 
-func (s *UserService) Verify(ctx context.Context, req *model.VerifyUserRequest) (*model.UserResponse, error) {
+func (s *UserService) Verify(ctx context.Context, req *model.VerifyRequest) (*model.UserResponse, error) {
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
