@@ -30,20 +30,23 @@ func (c *RouteConfig) SetupGuestRoute() {
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
-	c.App.Use(c.UserMiddleware)
-	c.App.DELETE("/api/v1/user/logout", c.UserController.Logout)
-	c.App.PUT("/api/v1/user/update", c.UserController.UpdateUser)
+	userGroup := c.App.Group("/api/v1/user")
+	userGroup.Use(c.UserMiddleware)
+	{
+		userGroup.DELETE("/api/v1/user/logout", c.UserController.Logout)
+		userGroup.PUT("/api/v1/user/update", c.UserController.UpdateUser)
+	}
 }
 
 func (c *RouteConfig) SetupArtistRoute() {
 	artistGroup := c.App.Group("/api/v1/artist")
 	artistGroup.Use(c.ArtistMiddelware)
 	{
-		c.App.PUT("/api/v1/artist/update", c.ArtistController.UpdateArtist)
-		c.App.DELETE("/api/v1/artist/logout", c.ArtistController.LogoutArtist)
-		c.App.POST("/api/v1/artist/register", c.ArtistController.RegisterArtist)
-		c.App.POST("/api/v1/artist/login", c.ArtistController.LoginArtist)
-		c.App.GET("/api/v1/artist/:id", c.ArtistController.GetArtist)
+		artistGroup.PUT("/update", c.ArtistController.UpdateArtist)
+		artistGroup.DELETE("/logout", c.ArtistController.LogoutArtist)
+		artistGroup.POST("/register", c.ArtistController.RegisterArtist)
+		artistGroup.POST("/login", c.ArtistController.LoginArtist)
+		artistGroup.GET("/:id", c.ArtistController.GetArtist)
 	}
 }
 
@@ -51,8 +54,8 @@ func (c *RouteConfig) SetupAdminRoute() {
 	adminGroup := c.App.Group("/api/v1/user/admin")
 	adminGroup.Use(c.AdminMiddleware)
 	{
-		c.App.POST("/api/v1/user/admin/register", c.UserController.RegisterAdmin)
-		c.App.DELETE("/api/v1/artist/delete/:id", c.ArtistController.DeleteArtist)
-		c.App.DELETE("/api/v1/user/delete/:id", c.UserController.DeleteUser)
+		adminGroup.POST("/register", c.UserController.RegisterAdmin)
+		adminGroup.DELETE("/artist/delete/:id", c.ArtistController.DeleteArtist)
+		adminGroup.DELETE("/user/delete/:id", c.UserController.DeleteUser)
 	}
 }
