@@ -73,6 +73,8 @@ func (s *ArtistService) RegisterArtist(ctx context.Context, req *model.RegisterA
 		Email:    req.Email,
 		UserName: req.UserName,
 		Role:     req.Role,
+		Genre:    req.Genre,
+		Bio:      req.Bio,
 	}
 
 	if err := s.ArtistRepository.Create(s.DB, artist); err != nil {

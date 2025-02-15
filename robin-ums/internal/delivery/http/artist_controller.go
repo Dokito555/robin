@@ -71,11 +71,21 @@ func (c *ArtistController) LoginArtist(ctx *gin.Context) {
 
 func (c *ArtistController) GetArtist(ctx *gin.Context) {
 	req := new(model.GetArtistRequest)
-	err := ctx.ShouldBindJSON(&req)
-	if err != nil {
-		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+	idStr := ctx.Param("id")
+	if idStr == "" {
+		c.Log.Warnf("id is empty")
+		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "id is empty"})
+		return
 	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert id string to int")
+		ctx.JSON(http.StatusInternalServerError, nil)
+		return
+	}
+
+	req.ID = id
 
 	rsp, err := c.Service.GetArtist(ctx.Request.Context(), req)
 	if err != nil {
