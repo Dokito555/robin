@@ -5,24 +5,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Dokito555/robin-ums/constants"
 	model "github.com/Dokito555/robin-ums/internal/model"
 	"github.com/Dokito555/robin-ums/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
-func NewAuth(userService *services.UserService, tokenService *services.TokenService) gin.HandlerFunc {
+func NewAuth(userService *services.UserService, tokenService *services.TokenService, requiredRole string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		tokenStr := ctx.GetHeader("Authorization")
-
 		request := &model.VerifyRequest{Token: tokenStr}
-
-		_, err := userService.Verify(ctx.Request.Context(), request)
-		if err != nil {
-			userService.Log.Warnf("[Auth Middleware] Failed to find user by token: %+v", err)
-			ctx.JSON(http.StatusUnauthorized, nil)
-			ctx.Abort()
-			return
-		}
 
 		claim, err := tokenService.ValidateToken(ctx.Request.Context(), tokenStr)
 		if err != nil {
@@ -30,6 +22,22 @@ func NewAuth(userService *services.UserService, tokenService *services.TokenServ
 			ctx.JSON(http.StatusUnauthorized, nil)
 			ctx.Abort()
 			return
+		}
+
+		if claim.Role != requiredRole {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden - " + requiredRole + " access required"})
+            ctx.Abort()
+            return
+		}
+
+		if claim.Role == constants.ROLE_USER || claim.Role == constants.ROLE_ADMIN {
+			_, err := userService.Verify(ctx.Request.Context(), request)
+			if err != nil {
+				userService.Log.Warnf("[Auth Middleware] Failed to find user by token: %+v", err)
+				ctx.JSON(http.StatusUnauthorized, nil)
+				ctx.Abort()
+				return
+			}
 		}
 
 		if time.Now().Unix() > claim.ExpiresAt.Unix() {
@@ -43,6 +51,8 @@ func NewAuth(userService *services.UserService, tokenService *services.TokenServ
 		ctx.Next()
 	}
 }
+
+
 
 func GetProfile(ctx *gin.Context) *model.ClaimToken {
 	auth, exist := ctx.Get("auth")

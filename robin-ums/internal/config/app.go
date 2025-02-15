@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Dokito555/robin-ums/constants"
 	"github.com/Dokito555/robin-ums/internal/delivery/grpc"
 	"github.com/Dokito555/robin-ums/internal/delivery/http"
 	"github.com/Dokito555/robin-ums/internal/delivery/http/middleware"
@@ -39,7 +40,9 @@ func Bootstrap(config *BootstrapConfig) {
 	tokenValidationController := grpc.NewTokenValidationController(tokenService, config.Log)
 
 	// setup middleware
-	middleware := middleware.NewAuth(userService, tokenService)
+	userMiddleware := middleware.NewAuth(userService, tokenService, constants.ROLE_USER)
+	adminMiddleware := middleware.NewAuth(userService, tokenService, constants.ROLE_ADMIN)
+	artistMiddleware := middleware.NewAuth(userService, tokenService, constants.ROLE_ARTIST)
 
 	// route config
 	routeConfig := route.RouteConfig{
@@ -47,7 +50,9 @@ func Bootstrap(config *BootstrapConfig) {
 		HealthController: healthController,
 		UserController:   userController,
 		ArtistController: artistController,
-		AuthMiddleware:   middleware,
+		UserMiddleware:   userMiddleware,
+		AdminMiddleware:  adminMiddleware,
+		ArtistMiddelware: artistMiddleware,
 	}
 
 	// grpc config
