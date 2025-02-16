@@ -3,58 +3,65 @@ package middleware
 import (
 	"log"
 	"net/http"
-	"time"
 
+	model "github.com/Dokito555/robin-playlists/internal/models"
+	"github.com/Dokito555/robin-playlists/internal/services"
+	"github.com/Dokito555/robin-playlists/internal/utils/constants"
+	"github.com/Dokito555/robin-playlists/pkg/ums"
 	"github.com/gin-gonic/gin"
 )
 
-func NewAuth(userService *services.UserService, tokenService *services.TokenService) gin.HandlerFunc {
-    return func(ctx *gin.Context) {
-        tokenStr := ctx.GetHeader("Authorization")
-        
-        request := &model.VerifyUserRequest{Token: tokenStr}
-        
-        _, err := userService.Verify(ctx.Request.Context(), request)
-        if err != nil {
-            userService.Log.Warnf("[Auth Middleware] Failed to find user by token: %+v", err)
-            ctx.JSON(http.StatusUnauthorized, nil)
-            ctx.Abort()
-            return 
-        }
+func NewAuth(ums *ums.UMS, tokenService *services.TokenService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		tokenStr := ctx.GetHeader("Authorization")
 
-        claim, err := tokenService.ValidateToken(ctx.Request.Context(), tokenStr)
-        if err != nil {
-            userService.Log.Warnf("failed to validate token: %+v", err)
-            ctx.JSON(http.StatusUnauthorized, nil)
-            ctx.Abort()
-            return
-        }
+		// profile, err := ums.GetProfile(ctx.Request.Context(), tokenStr)
+		profile, err := ums.ValidateToken(ctx.Request.Context(), tokenStr)
+		if err != nil {
+			tokenService.Log.Warnf("failed find user by token : %+v", err)
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			ctx.Abort()
+			return
+		}
 
-        if time.Now().Unix() > claim.ExpiresAt.Unix() {
-            userService.Log.Warnf("JWT token is expired. Expiry: %v, Current: %v", claim.ExpiresAt, time.Now())
-            ctx.JSON(http.StatusUnauthorized, nil)
-            ctx.Abort()
-            return 
-        }
+		claimToken := &model.ClaimToken{
+			UserID:   profile.ID,
+			Email:    profile.Email,
+			Role:     profile.Role,
+			UserName: profile.UserName,
+		}
 
-        ctx.Set("auth", claim)
-        ctx.Next()
-    }
+		if claimToken.UserID == 0 || claimToken.Email == "" || claimToken.Role == "" {
+			tokenService.Log.WithField("profile", claimToken).Warn("Invalid user profile received from UMS")
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "invalid user profile"})
+			ctx.Abort()
+			return
+		}
+
+		if claimToken.Role != constants.ROLE_ADMIN && claimToken.Role != constants.ROLE_ARTIST {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			ctx.Abort()
+			return
+		}
+
+		ctx.Set("auth", claimToken)
+		ctx.Next()
+	}
 }
 
 func GetProfile(ctx *gin.Context) *model.ClaimToken {
-    auth, exist := ctx.Get("auth")
-    if !exist {
-        log.Printf("auth not found in context")
-        return nil
-    }
-    
-    claim, ok := auth.(*model.ClaimToken)
-    if !ok {
-        log.Printf("type assertion failed. Expected *model.ClaimToken, got type: %T, value: %+v", 
-            auth, auth)
-        return nil
-    }
-    
-    return claim
+	auth, exist := ctx.Get("auth")
+	if !exist {
+		log.Printf("auth not found in context")
+		return nil
+	}
+
+	claim, ok := auth.(*model.ClaimToken)
+	if !ok {
+		log.Printf("type assertion failed. Expected *model.ClaimToken, got type: %T, value: %+v",
+			auth, auth)
+		return nil
+	}
+
+	return claim
 }

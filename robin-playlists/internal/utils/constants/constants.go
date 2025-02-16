@@ -1,9 +1,9 @@
 package constants
 
 const (
-	ROLE_USER    = "USER"
+	ROLE_USER   = "USER"
 	ROLE_ARTIST = "ARTIST"
-	ROLE_ADMIN   = "ADMIN"
+	ROLE_ADMIN  = "ADMIN"
 )
 
 const (
@@ -15,6 +15,7 @@ const (
 	BAD_REQUEST           = "Bad Request"
 	INTERNAL_SERVER_ERROR = "Internal Server Error"
 	NOT_FOUND             = "Not Found"
+	UNAUTHORIZED          = "unauthorized"
 )
 
 const (

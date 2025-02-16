@@ -46,7 +46,6 @@ func (c *RouteConfig) SetupArtistRoute() {
 	artistGroup := c.App.Group("/api/v1/artist")
 	artistGroup.Use(c.ArtistMiddelware)
 	{
-		// TODO: fix update artist instead create new
 		artistGroup.PUT("/update", c.ArtistController.UpdateArtist)
 		artistGroup.DELETE("/logout", c.ArtistController.LogoutArtist)
 	}
@@ -56,7 +55,6 @@ func (c *RouteConfig) SetupAdminRoute() {
 	adminGroup := c.App.Group("/api/v1/user/admin")
 	adminGroup.Use(c.AdminMiddleware)
 	{
-		// TODO: fix delete artist unauthorized
 		adminGroup.DELETE("/artist/delete/:id", c.ArtistController.DeleteArtist)
 		adminGroup.DELETE("/user/delete/:id", c.UserController.DeleteUser)
 	}
