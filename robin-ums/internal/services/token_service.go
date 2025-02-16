@@ -12,13 +12,13 @@ import (
 )
 
 type TokenService struct {
-    Log   *logrus.Logger
-    Viper *viper.Viper
+	Log   *logrus.Logger
+	Viper *viper.Viper
 }
 
 func NewTokenService(log *logrus.Logger, viper *viper.Viper) *TokenService {
 	return &TokenService{
-		Log: log,
+		Log:   log,
 		Viper: viper,
 	}
 }
@@ -28,16 +28,17 @@ var mapTypeToken = map[string]time.Duration{
 	"refresh_token": time.Hour * 72,
 }
 
-func (s *TokenService) GenerateToken(ctx context.Context, userID int, tokenType string, email string, role string) (string, error) {
+func (s *TokenService) GenerateToken(ctx context.Context, userID int, tokenType string, email string, role string, username string) (string, error) {
 	_, exists := mapTypeToken[tokenType]
-    if !exists {
-        return "", fmt.Errorf("invalid token type: %s", tokenType)
-    }
+	if !exists {
+		return "", fmt.Errorf("invalid token type: %s", tokenType)
+	}
 
 	claimToken := model.ClaimToken{
-		UserID: userID,
-		Email:  email,
-		Role: role,
+		UserID:   userID,
+		Email:    email,
+		UserName: username,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    s.Viper.GetString("APP_NAME"),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

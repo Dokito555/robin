@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Dokito555/robin-ums/constants"
 	model "github.com/Dokito555/robin-ums/internal/model"
 	"github.com/Dokito555/robin-ums/internal/services"
+	"github.com/Dokito555/robin-ums/utils/constants"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,8 +26,8 @@ func NewAuth(userService *services.UserService, tokenService *services.TokenServ
 
 		if claim.Role != requiredRole {
 			ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden - " + requiredRole + " access required"})
-            ctx.Abort()
-            return
+			ctx.Abort()
+			return
 		}
 
 		if claim.Role == constants.ROLE_USER || claim.Role == constants.ROLE_ADMIN {
@@ -51,8 +51,6 @@ func NewAuth(userService *services.UserService, tokenService *services.TokenServ
 		ctx.Next()
 	}
 }
-
-
 
 func GetProfile(ctx *gin.Context) *model.ClaimToken {
 	auth, exist := ctx.Get("auth")

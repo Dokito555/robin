@@ -1,5 +1,7 @@
 package main
 
+import "github.com/Dokito555/robin-albums/internal/config"
+
 func main() {
 	// init configs
 	viperConfig := config.NewViper()
@@ -20,8 +22,8 @@ func main() {
 
 	// run app
 	port := viperConfig.GetString("APP_PORT")
-	err := app.Run(":"+port)
-	log.Info("Listening to port: "+port)
+	err := app.Run(":" + port)
+	log.Info("Listening to port: " + port)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Dokito555/robin-ums/constants"
 	"github.com/Dokito555/robin-ums/internal/delivery/http/middleware"
 	"github.com/Dokito555/robin-ums/internal/model"
 	"github.com/Dokito555/robin-ums/internal/services"
+	"github.com/Dokito555/robin-ums/utils/constants"
+	"github.com/Dokito555/robin-ums/utils/errs"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -29,20 +30,24 @@ func (c *UserController) RegisterUser(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	if req.Role == constants.ROLE_ADMIN {
 		c.Log.Warnf("failed to register as admin")
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_UNAUTHORIZED))
 		return
 	}
 
 	rsp, err := c.Service.Register(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to register user: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -55,20 +60,24 @@ func (c *UserController) RegisterAdmin(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	if req.Role != constants.ROLE_ADMIN {
 		c.Log.Warnf("failed to register")
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_UNAUTHORIZED))
 		return
 	}
 
 	rsp, err := c.Service.Register(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to register user: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -81,13 +90,17 @@ func (c *UserController) Login(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 	}
 
 	rsp, err := c.Service.Login(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to login user: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -100,7 +113,7 @@ func (c *UserController) Logout(ctx *gin.Context) {
 	token := ctx.GetHeader("Authorization")
 	if token == "" {
 		c.Log.Warnf("token is empty")
-		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "unauthorized"})
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_UNAUTHORIZED))
 		return
 	}
 
@@ -109,7 +122,11 @@ func (c *UserController) Logout(ctx *gin.Context) {
 	err := c.Service.Logout(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to logout user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -121,14 +138,14 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	if idStr == "" {
 		c.Log.Warnf("id is empty")
-		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "id is empty"})
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.Log.Warnf("failed to convert id string to int")
-		ctx.JSON(http.StatusInternalServerError, nil)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
 		return
 	}
 
@@ -137,7 +154,12 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	rsp, err := c.Service.GetUser(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to get user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		c.Log.Warnf("failed to logout user: %v", err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -151,20 +173,20 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 
 	if auth.Role != constants.ROLE_ADMIN {
 		c.Log.Warnf("unauthorized access")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"Message": ""})
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_UNAUTHORIZED))
 		return
 	}
 
 	if idStr == "" {
 		c.Log.Warnf("id is empty")
-		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "id is empty"})
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.Log.Warnf("failed to convert id string to int")
-		ctx.JSON(http.StatusInternalServerError, nil)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
 		return
 	}
 
@@ -173,20 +195,23 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 	err = c.Service.DeleteUser(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to get user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.UserResponse]{Message: http.StatusOK, Data: nil})
 }
 
-
 func (c *UserController) VerifyUser(ctx *gin.Context) {
 	auth := middleware.GetProfile(ctx)
 
 	if auth == nil {
 		c.Log.Warn("failed to get profile from ctx")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"Message": "couldn't get profile from ctx"})
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
 		return
 	}
 
@@ -194,7 +219,11 @@ func (c *UserController) VerifyUser(ctx *gin.Context) {
 	rsp, err := c.Service.GetUser(ctx, req)
 	if err != nil {
 		c.Log.Warnf("Failed to verify user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"Message": "couldn't verify user"})
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -206,13 +235,17 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 	}
 
 	rsp, err := c.Service.UpdateUser(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to login user: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 

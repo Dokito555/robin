@@ -3,12 +3,14 @@ package services
 import (
 	"context"
 	"errors"
+	"net/http"
 
-	"github.com/Dokito555/robin-ums/constants"
 	"github.com/Dokito555/robin-ums/internal/entity"
 	"github.com/Dokito555/robin-ums/internal/model"
 	"github.com/Dokito555/robin-ums/internal/model/converter"
 	"github.com/Dokito555/robin-ums/internal/repository"
+	"github.com/Dokito555/robin-ums/utils/constants"
+	"github.com/Dokito555/robin-ums/utils/errs"
 	"github.com/go-playground/validator"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -44,28 +46,28 @@ func (s *ArtistService) RegisterArtist(ctx context.Context, req *model.RegisterA
 	err := s.Validate.Struct(req)
 	if err != nil {
 		s.Log.Warnf("invalid request body: %+v", err)
-		return nil, errors.New(constants.BAD_REQUEST)
+		return nil, errs.ERROR_BAD_REQUEST
 	}
 
 	if req.Password == "" || req.Email == "" {
-		return nil, errors.New("password or email is empty")
+		return nil, errs.NewError(http.StatusBadRequest, "password or email required")
 	}
 
 	artist, err := s.ArtistRepository.FindByEmail(s.DB, &entity.Artist{}, req.Email)
 	if err != nil {
 		s.Log.Warnf("database error fetching artist: %+v", err)
-		return nil, errors.New(constants.NOT_FOUND)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	if artist != nil {
 		s.Log.Warnf("artist with that email already exists")
-		return nil, errors.New("artist already exists")
+		return nil, errs.ERROR_USER_EXIST
 	}
 
 	password, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		s.Log.Warnf("failed to generate bcrypt hash: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	artist = &entity.Artist{
@@ -79,12 +81,12 @@ func (s *ArtistService) RegisterArtist(ctx context.Context, req *model.RegisterA
 
 	if err := s.ArtistRepository.Create(s.DB, artist); err != nil {
 		s.Log.Warnf("failed to create artist in database: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		s.Log.Warnf("failed to commit transaction: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	return converter.ArtistToReponse(artist), nil
@@ -100,35 +102,35 @@ func (s *ArtistService) LoginArtist(ctx context.Context, req *model.LoginArtistR
 	err := s.Validate.Struct(req)
 	if err != nil {
 		s.Log.Warnf("invalid request body: %+v", err)
-		return nil, errors.New(constants.BAD_REQUEST)
+		return nil, errs.ERROR_BAD_REQUEST
 	}
 
 	if req.Password == "" || req.Email == "" {
-		return nil, errors.New("password or email is empty")
+		return nil, errs.NewError(http.StatusBadRequest, "passwor or email are required")
 	}
 
 	newArtist := new(entity.Artist)
 	artist, err := s.ArtistRepository.FindByEmail(s.DB, newArtist, req.Email)
 	if err != nil {
 		s.Log.Warnf("database error fetching artist: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(artist.Password), []byte(req.Password)); err != nil {
 		s.Log.Warnf("failed to compare hashed password: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	token, err := s.TokenService.GenerateToken(ctx, artist.ID, constants.TOKEN_TYPE_TOKEN, artist.Email, artist.Role)
+	token, err := s.TokenService.GenerateToken(ctx, artist.ID, constants.TOKEN_TYPE_TOKEN, artist.Email, artist.Role, artist.UserName)
 	if err != nil {
 		s.Log.Warnf("failed to genereate token: %+v", err)
-		return nil, err
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	refreshToken, err := s.TokenService.GenerateToken(ctx, artist.ID, constants.TOKEN_TYPE_REFRESH, artist.Email, artist.Role)
+	refreshToken, err := s.TokenService.GenerateToken(ctx, artist.ID, constants.TOKEN_TYPE_REFRESH, artist.Email, artist.Role, artist.UserName)
 	if err != nil {
 		s.Log.Warnf("failed to genereate refresh token: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	newArtist.Token = token
@@ -137,12 +139,12 @@ func (s *ArtistService) LoginArtist(ctx context.Context, req *model.LoginArtistR
 	err = s.ArtistRepository.Update(s.DB, newArtist)
 	if err != nil {
 		s.Log.Warnf("failed to update artist token and refresh token: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		s.Log.Warnf("failed to commit transaction: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	return converter.ArtistToReponse(newArtist), nil
@@ -157,7 +159,7 @@ func (s *ArtistService) UpdateArtist(ctx context.Context, req *model.UpdateArtis
 	err := s.Validate.Struct(req)
 	if err != nil {
 		s.Log.Warnf("invalid request body : %+v", err)
-		return nil, errors.New(constants.BAD_REQUEST)
+		return nil, errs.ERROR_BAD_REQUEST
 	}
 
 	if req.Password == "" {
@@ -167,7 +169,7 @@ func (s *ArtistService) UpdateArtist(ctx context.Context, req *model.UpdateArtis
 	password, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		s.Log.Warnf("failed to generate bcrypt hash: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	artist := &entity.Artist{
@@ -180,12 +182,12 @@ func (s *ArtistService) UpdateArtist(ctx context.Context, req *model.UpdateArtis
 	err = s.ArtistRepository.Update(s.DB, artist)
 	if err != nil {
 		s.Log.Warnf("failed to update: %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		s.Log.Warnf("failed commit transaction : %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 	return nil, nil
 }
@@ -199,14 +201,14 @@ func (s *ArtistService) LogoutArtist(ctx context.Context, req *model.LogoutArtis
 	err := s.Validate.Struct(req)
 	if err != nil {
 		s.Log.Warnf("invalid request body : %+v", err)
-		return errors.New(constants.BAD_REQUEST)
+		return errs.ERROR_BAD_REQUEST
 	}
 
 	artist := new(entity.Artist)
 	_, err = s.ArtistRepository.FindByToken(s.DB, artist, req.Token)
 	if err != nil {
 		s.Log.Warnf("failed to find artist in database: %+v", err)
-		return errors.New(constants.NOT_FOUND)
+		return errs.ERROR_NOT_FOUND
 	}
 
 	artist.Token = ""
@@ -214,12 +216,12 @@ func (s *ArtistService) LogoutArtist(ctx context.Context, req *model.LogoutArtis
 	err = s.ArtistRepository.Update(tx, artist)
 	if err != nil {
 		s.Log.Warnf("failed to update artist: %+v", err)
-		return errors.New(constants.INTERNAL_SERVER_ERROR)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		s.Log.Warnf("failed commit transaction : %+v", err)
-		return errors.New(constants.INTERNAL_SERVER_ERROR)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 	return nil
 }
@@ -233,13 +235,13 @@ func (s *ArtistService) GetArtist(ctx context.Context, req *model.GetArtistReque
 	err := s.Validate.Struct(req)
 	if err != nil {
 		s.Log.Warnf("invalid request body : %+v", err)
-		return nil, errors.New(constants.BAD_REQUEST)
+		return nil, errs.ERROR_BAD_REQUEST
 	}
 
 	artist := new(entity.Artist)
 	if err := s.ArtistRepository.FindById(s.DB, artist, req.ID); err != nil {
 		s.Log.Warnf("failed to find artist in database: %+v", err)
-		return nil, errors.New(constants.NOT_FOUND)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	artist.Token = ""
@@ -247,7 +249,7 @@ func (s *ArtistService) GetArtist(ctx context.Context, req *model.GetArtistReque
 
 	if err := tx.Commit().Error; err != nil {
 		s.Log.Warnf("failed commit transaction : %+v", err)
-		return nil, errors.New(constants.INTERNAL_SERVER_ERROR)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	return converter.ArtistToReponse(artist), nil
@@ -262,30 +264,30 @@ func (s *ArtistService) DeleteArtist(ctx context.Context, req *model.DeleteArtis
 	err := s.Validate.Struct(req)
 	if err != nil {
 		s.Log.Warnf("invalid request body : %+v", err)
-		return errors.New(constants.BAD_REQUEST)
+		return errs.ERROR_BAD_REQUEST
 	}
 
 	artist := new(entity.Artist)
 	err = s.ArtistRepository.FindById(tx, artist, req.ID)
 	if err != nil {
 		s.Log.Warnf("failed to find artist by token : %+v", err)
-		return errors.New(constants.INTERNAL_SERVER_ERROR)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	if artist == nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		s.Log.Warnf("artist not found: %+v", err)
-		return errors.New(constants.NOT_FOUND)
+		return errs.ERROR_NOT_FOUND
 	}
 
 	err = s.ArtistRepository.Delete(s.DB, artist)
 	if err != nil {
 		s.Log.Warnf("failed to delete artist by token : %+v", err)
-		return errors.New(constants.INTERNAL_SERVER_ERROR)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		s.Log.Warnf("failed commit transaction : %+v", err)
-		return errors.New(constants.INTERNAL_SERVER_ERROR)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	return nil

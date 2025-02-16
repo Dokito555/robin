@@ -20,5 +20,6 @@ message TokenResponse {
 message UserData {
     int64 user_id = 1;
     string email = 2;
-    string role = 3;
+    string username = 3;
+    string role = 4;
 }

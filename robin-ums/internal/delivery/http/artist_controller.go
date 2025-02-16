@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Dokito555/robin-ums/constants"
 	"github.com/Dokito555/robin-ums/internal/delivery/http/middleware"
 	"github.com/Dokito555/robin-ums/internal/model"
 	"github.com/Dokito555/robin-ums/internal/services"
+	"github.com/Dokito555/robin-ums/utils/constants"
+	"github.com/Dokito555/robin-ums/utils/errs"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -29,20 +30,24 @@ func (c *ArtistController) RegisterArtist(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	if req.Role == constants.ROLE_ADMIN {
 		c.Log.Warnf("failed to register as admin")
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	rsp, err := c.Service.RegisterArtist(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to register artist: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -55,13 +60,17 @@ func (c *ArtistController) LoginArtist(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest,  errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 	}
 
 	rsp, err := c.Service.LoginArtist(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to login artist: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -74,14 +83,14 @@ func (c *ArtistController) GetArtist(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	if idStr == "" {
 		c.Log.Warnf("id is empty")
-		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "id is empty"})
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.Log.Warnf("failed to convert id string to int")
-		ctx.JSON(http.StatusInternalServerError, nil)
+		ctx.JSON(http.StatusInternalServerError, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
 		return
 	}
 
@@ -90,7 +99,11 @@ func (c *ArtistController) GetArtist(ctx *gin.Context) {
 	rsp, err := c.Service.GetArtist(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to get artist: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -103,13 +116,17 @@ func (c *ArtistController) UpdateArtist(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, err)
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 	}
 
 	rsp, err := c.Service.UpdateArtist(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to get artist: %+v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -122,7 +139,7 @@ func (c *ArtistController) LogoutArtist(ctx *gin.Context) {
 	token := ctx.GetHeader("Authorization")
 	if token == "" {
 		c.Log.Warnf("token is empty")
-		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "unauthorized"})
+		ctx.JSON(http.StatusBadRequest,errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
@@ -131,7 +148,11 @@ func (c *ArtistController) LogoutArtist(ctx *gin.Context) {
 	err := c.Service.LogoutArtist(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to logout artist: %v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 
@@ -146,20 +167,20 @@ func (c *ArtistController) DeleteArtist(ctx *gin.Context) {
 
 	if auth.Role != constants.ROLE_ADMIN {
 		c.Log.Warnf("unauthorized access")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"Message": ""})
+		ctx.JSON(http.StatusUnauthorized, errs.NewErrorResponse(errs.ERROR_UNAUTHORIZED))
 		return
 	}
 
 	if idStr == "" {
 		c.Log.Warnf("id is empty")
-		ctx.JSON(http.StatusBadRequest, gin.H{"Message": "id is empty"})
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.Log.Warnf("failed to convert id string to int")
-		ctx.JSON(http.StatusInternalServerError, nil)
+		ctx.JSON(http.StatusInternalServerError, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
 		return
 	}
 
@@ -168,7 +189,11 @@ func (c *ArtistController) DeleteArtist(ctx *gin.Context) {
 	err = c.Service.DeleteArtist(ctx.Request.Context(), req)
 	if err != nil {
 		c.Log.Warnf("failed to get user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
 		return
 	}
 

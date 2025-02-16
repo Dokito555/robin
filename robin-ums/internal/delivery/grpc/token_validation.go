@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Dokito555/robin-ums/constants"
 	token_validation_proto "github.com/Dokito555/robin-ums/internal/delivery/grpc/proto/token"
 	"github.com/Dokito555/robin-ums/internal/services"
+	"github.com/Dokito555/robin-ums/utils/constants"
 	"github.com/sirupsen/logrus"
 )
 
 type TokenValidationController struct {
 	TokenService *services.TokenService
-	Log *logrus.Logger
+	Log          *logrus.Logger
 	token_validation_proto.UnimplementedTokenValidationServer
 }
 
 func NewTokenValidationController(service *services.TokenService, log *logrus.Logger) *TokenValidationController {
 	return &TokenValidationController{
-		Log: log,
+		Log:          log,
 		TokenService: service,
 	}
 }
@@ -48,8 +48,8 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 		Message: constants.STATUS_SUCCESS,
 		Data: &token_validation_proto.UserData{
 			UserId: int64(claimToken.UserID),
-			Email: claimToken.Email,
-			Role: claimToken.Role,
+			Email:  claimToken.Email,
+			Role:   claimToken.Role,
 		},
 	}, nil
 }

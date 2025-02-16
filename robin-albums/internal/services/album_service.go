@@ -1,0 +1,167 @@
+package services
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/Dokito555/robin-albums/internal/entity"
+	model "github.com/Dokito555/robin-albums/internal/models"
+	"github.com/Dokito555/robin-albums/internal/models/converter"
+	"github.com/Dokito555/robin-albums/internal/repository"
+	"github.com/Dokito555/robin-albums/utils/errs"
+	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
+
+type AlbumService struct {
+	DB              *gorm.DB
+	Log             *logrus.Logger
+	Validate       *validator.Validate
+	AlbumRepository *repository.AlbumRepository
+}
+
+func NewAlbumService(db *gorm.DB, log *logrus.Logger, validator *validator.Validate, AlbumRepository *repository.AlbumRepository) *AlbumService {
+	return &AlbumService{
+		DB:              db,
+		Log:             log,
+		Validate:       validator,
+		AlbumRepository: AlbumRepository,
+	}
+}
+
+func (s *AlbumService) CreateAlbum(ctx context.Context, req *model.CreateAlbumRequest) (*model.AlbumResponse, error) {
+	s.Log.Info("starting Create Album function")
+	s.Log.Infof("request received: %+v", req)
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	if req.Name == "" || req.Type == "" {
+		return nil, errs.NewError(http.StatusBadRequest, "name or type are required")
+	}
+
+	newAlbum := &entity.Album{
+		ArtistID: req.ArtistID,
+		Name: req.Name,
+		Type: req.Type,
+	}
+	err = s.AlbumRepository.Create(s.DB, newAlbum)
+	if err != nil {
+		s.Log.Warnf("failed to create new album in database: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	return converter.AlbumToResponse(newAlbum), nil
+}
+
+func (s *AlbumService) GetAlbum(ctx context.Context, req *model.GetAlbumRequest) (*model.AlbumResponse, error) {
+	s.Log.Info("starting Get Album function")
+	s.Log.Infof("request received: %+v", req)
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	album := new(entity.Album)
+	err = s.AlbumRepository.FindById(s.DB, album, req.ID)
+	if err != nil {
+		s.Log.Warnf("failed to find album in db: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	return converter.AlbumToResponse(album), nil
+}
+
+func (s *AlbumService) UpdateAlbum(ctx context.Context, req *model.UpdateAlbumRequest) (*model.AlbumResponse, error) {
+	s.Log.Info("starting Update Album function")
+	s.Log.Infof("request received: %+v", req)
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	album := &entity.Album{
+		Name: req.Name,
+		Type: req.Type,
+	}
+
+	err = s.AlbumRepository.Update(s.DB, album)
+	if err != nil {
+		s.Log.Warnf("failed to update album in db: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	return converter.AlbumToResponse(album), nil
+}
+
+func (s *AlbumService) DeleteAlbum(ctx context.Context, req *model.DeleteAlbumRequest) error {
+	s.Log.Info("starting Delete Album function")
+	s.Log.Infof("request received: %+v", req)
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return errs.ERROR_BAD_REQUEST
+	}
+
+	album := new(entity.Album)
+	err = s.AlbumRepository.FindById(s.DB, album, req.ID)
+	if err != nil {
+		s.Log.Warnf("failed to find album in db: %+v", err)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	if album.ID == 0 {
+		s.Log.Warnf("album not found: %+v", err)
+		return errs.ERROR_NOT_FOUND
+	}
+
+	err = s.AlbumRepository.Delete(s.DB, album)
+	if err != nil {
+		s.Log.Warnf("failed to delete album in db: %+v", err)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	return nil
+}

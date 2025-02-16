@@ -1,13 +1,13 @@
 package config
 
 import (
-	"github.com/Dokito555/robin-ums/constants"
 	"github.com/Dokito555/robin-ums/internal/delivery/grpc"
 	"github.com/Dokito555/robin-ums/internal/delivery/http"
 	"github.com/Dokito555/robin-ums/internal/delivery/http/middleware"
 	"github.com/Dokito555/robin-ums/internal/delivery/http/route"
 	"github.com/Dokito555/robin-ums/internal/repository"
 	"github.com/Dokito555/robin-ums/internal/services"
+	"github.com/Dokito555/robin-ums/utils/constants"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
 	"github.com/sirupsen/logrus"

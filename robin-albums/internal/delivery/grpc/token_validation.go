@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	token_validation_proto "github.com/Dokito555/robin-albums/internal/delivery/grpc/proto/token"
+	"github.com/Dokito555/robin-albums/internal/services"
+	"github.com/Dokito555/robin-albums/utils/constants"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,6 +49,7 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 		Data: &token_validation_proto.UserData{
 			UserId: int64(claimToken.UserID),
 			Email: claimToken.Email,
+			Username: claimToken.UserName,
 			Role: claimToken.Role,
 		},
 	}, nil

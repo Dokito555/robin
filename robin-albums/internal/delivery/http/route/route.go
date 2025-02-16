@@ -8,6 +8,7 @@ import (
 type RouteConfig struct {
 	App              *gin.Engine
 	HealthController *http.HealthController
+	AlbumController  *http.AlbumController
 	AuthMiddleware   gin.HandlerFunc
 }
 
@@ -18,8 +19,15 @@ func (c *RouteConfig) Setup() {
 
 func (c *RouteConfig) SetupGuestRoute() {
 	c.App.GET("/api/healthcheck", c.HealthController.Healthcheck)
+	c.App.GET("/api/v1/album/:id", c.AlbumController.GetAlbum)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
-	c.App.Use(c.AuthMiddleware)
+	albumGroup := c.App.Group("/api/v1/album")
+	albumGroup.Use(c.AuthMiddleware)
+	{
+		albumGroup.POST("", c.AlbumController.CreateAlbum)
+		albumGroup.PUT("/update", c.AlbumController.UpdateAlbum)
+		albumGroup.DELETE("/:id", c.AlbumController.DeleteAlbum)
+	}
 }
