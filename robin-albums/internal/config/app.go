@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Dokito555/robin-albums/internal/delivery/grpc"
 	"github.com/Dokito555/robin-albums/internal/delivery/http"
 	"github.com/Dokito555/robin-albums/internal/delivery/http/middleware"
 	"github.com/Dokito555/robin-albums/internal/delivery/http/route"
@@ -47,5 +48,13 @@ func Bootstrap(config *BootstrapConfig) {
 		AlbumController:  albumController,
 		AuthMiddleware:   authMiddleware,
 	}
+	
+	// setup grpc
+	grpcConfig := grpc.GrpcConfig{
+		Log: config.Log,
+		Viper: config.Config,
+	}
+
 	routeConfig.Setup()
+	go grpcConfig.Setup()
 }

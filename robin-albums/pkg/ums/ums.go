@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	token_validation_proto "github.com/Dokito555/robin-albums/internal/delivery/grpc/proto/token"
 	"github.com/Dokito555/robin-albums/utils/constants"
@@ -34,6 +35,7 @@ func NewUmsPkg(logger *logrus.Logger, config *viper.Viper) *UMS {
 	}
 }
 
+// http
 func (s *UMS) GetProfile(ctx context.Context, token string) (*Profile, error) {
 	url := s.Config.GetString("UMS_HOST") + s.Config.GetString("UMS_ENDPOINT_VERIFY")
 	httpReq, err := http.NewRequest(http.MethodGet, url, nil)
@@ -72,11 +74,29 @@ func (s *UMS) GetProfile(ctx context.Context, token string) (*Profile, error) {
 	return pf, nil
 }
 
+// grpc
 func (s *UMS) ValidateToken(ctx context.Context, token string) (*Profile, error) {
 	data := new(Profile)
 
-	conn, err := grpc.Dial(s.Config.GetString("UMS_GRPC_HOST"), grpc.WithInsecure())
-	defer conn.Close()
+	conn, err := grpc.Dial(
+        s.Config.GetString("UMS_GRPC_HOST"), 
+        grpc.WithInsecure(),
+        grpc.WithBlock(),
+        grpc.WithTimeout(5*time.Second),
+    )
+
+	if err != nil {
+        return nil, fmt.Errorf("failed to connect to gRPC server: %v", err)
+    }
+    if conn == nil {
+        return nil, fmt.Errorf("connection is nil after successful dial")
+    }
+
+	defer func() {
+        if conn != nil {
+            conn.Close()
+        }
+    }()
 
 	client := token_validation_proto.NewTokenValidationClient(conn)
 
@@ -86,8 +106,9 @@ func (s *UMS) ValidateToken(ctx context.Context, token string) (*Profile, error)
 
 	response, err := client.ValidateToken(ctx, req)
 	if err != nil {
-		return data, fmt.Errorf("failed to validate token from grpc")
-	}
+        s.Log.Errorf("Token validation failed with error: %v", err)
+        return data, fmt.Errorf("failed to validate token from grpc: %v", err)
+    }
 
 	if response == nil {
 		return data, fmt.Errorf("response is nil")
@@ -97,10 +118,15 @@ func (s *UMS) ValidateToken(ctx context.Context, token string) (*Profile, error)
 		return data, fmt.Errorf("got response error from ums: %s", response.Message)
 	}
 
+	if response.Data == nil {
+        return data, fmt.Errorf("response data is nil")
+    }
+
 	data.ID = int(response.Data.UserId)
 	data.Email = response.Data.Email
+	data.UserName = response.Data.Username
 	data.Role = response.Data.Role
 
-	s.Log.Infof("DATA: %+v", data)
+	s.Log.Infof("Validated user profile: %+v", data)
 	return data, nil
 }

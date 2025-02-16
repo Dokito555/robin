@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// controller
 type TokenValidationController struct {
 	TokenService *services.TokenService
 	Log          *logrus.Logger
@@ -28,6 +29,8 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 		token = req.GetToken()
 	)
 
+	s.Log.Info("Received token validation request")
+
 	if token == "" {
 		s.Log.Warnf("token is empty")
 		err := fmt.Errorf("token is empty")
@@ -43,6 +46,16 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 			Message: err.Error(),
 		}, err
 	}
+
+	if claimToken.UserID == 0 || claimToken.Role == "" {
+        return nil, fmt.Errorf("invalid token data: missing required fields")
+    }
+
+	s.Log.WithFields(logrus.Fields{
+        "userId": claimToken.UserID,
+        "email":  claimToken.Email,
+        "role":   claimToken.Role,
+    }).Info("Token validated successfully")
 
 	return &token_validation_proto.TokenResponse{
 		Message: constants.STATUS_SUCCESS,

@@ -27,7 +27,7 @@ func (c *RouteConfig) SetupAuthRoute() {
 	albumGroup.Use(c.AuthMiddleware)
 	{
 		albumGroup.POST("", c.AlbumController.CreateAlbum)
-		albumGroup.PUT("/update", c.AlbumController.UpdateAlbum)
+		albumGroup.PUT("/:id", c.AlbumController.UpdateAlbum)
 		albumGroup.DELETE("/:id", c.AlbumController.DeleteAlbum)
 	}
 }

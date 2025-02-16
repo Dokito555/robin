@@ -5,11 +5,12 @@ import "time"
 type (
 	CreateAlbumRequest struct {
 		ArtistID int    `json:"artist_id" validate:"required"`
-		Name     string `json:"id" validate:"required"`
+		Name     string `json:"name" validate:"required"`
 		Type     string `json:"type" validate:"required"`
 	}
 
 	UpdateAlbumRequest struct {
+		ID   int    `json:"id" validate:"required"`
 		Name string `json:"name" validate:"required"`
 		Type string `json:"type" validate:"required"`
 	}

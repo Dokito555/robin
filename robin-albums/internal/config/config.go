@@ -11,4 +11,7 @@ type Config struct {
 	DBName string `mapstructure:"DB_NAME"`
 	DBUser string `mapstructure:"DB_USER"`
 	DBPass string `mapstructure:"DB_PASSWORD"`
+
+	GRpcPort    string `mapstructure:"GRPC_PORT"`
+	UmsGRpcHost string `mapstructure:"UMS_GRPC_HOST"`
 }

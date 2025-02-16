@@ -2,18 +2,18 @@ package grpc
 
 import (
 	"net"
+	"time"
 
-	token_validation_proto "github.com/Dokito555/robin-albums/internal/delivery/grpc/proto/token"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 
 type GrpcConfig struct {
 	Log *logrus.Logger
 	Viper *viper.Viper
-	TokenValidationController *TokenValidationController
 }
 
 func (c *GrpcConfig) Setup() {
@@ -21,17 +21,22 @@ func (c *GrpcConfig) Setup() {
 }
 
 func (c *GrpcConfig) RunGrpc() {
-	lis, err := net.Listen("tcp", ":"+c.Viper.GetString("GRPC_PORT"))
+	port := c.Viper.GetString("GRPC_PORT")
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		c.Log.Fatal("failed to listen to grpc port:", err)
-	}
+        c.Log.Fatalf("failed to listen on port %s: %v", port, err)
+    }
 
-	s := grpc.NewServer()
-
-	token_validation_proto.RegisterTokenValidationServer(s, c.TokenValidationController)
+	s := grpc.NewServer(
+        grpc.KeepaliveParams(keepalive.ServerParameters{
+            MaxConnectionIdle: 5 * time.Minute,
+            Time:             20 * time.Second,
+            Timeout:         10 * time.Second,
+        }),
+    )
 	
-	logrus.Info("listening to grpc port: " + c.Viper.GetString("GRPC_PORT"))
-	if err := s.Serve(lis); err != nil {
-		c.Log.Fatal("failed to serve grpc port: ", err)
-	}
+	c.Log.Infof("gRPC server listening on port %s", port)
+    if err := s.Serve(lis); err != nil {
+        c.Log.Fatalf("Failed to serve gRPC: %v", err)
+    }
 }

@@ -108,10 +108,14 @@ func (s *AlbumService) UpdateAlbum(ctx context.Context, req *model.UpdateAlbumRe
 		return nil, errs.ERROR_BAD_REQUEST
 	}
 
-	album := &entity.Album{
-		Name: req.Name,
-		Type: req.Type,
+	album := new(entity.Album)
+	if err := s.AlbumRepository.FindById(s.DB, album, req.ID); err != nil {
+		s.Log.Warnf("album not found: %+v", err)
+		return nil, errs.ERROR_NOT_FOUND
 	}
+
+	album.Name = req.Name
+	album.Type = req.Type
 
 	err = s.AlbumRepository.Update(s.DB, album)
 	if err != nil {
