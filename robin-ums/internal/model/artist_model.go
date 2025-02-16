@@ -30,6 +30,7 @@ type (
 	}
 
 	UpdateArtistRequest struct {
+		ID       int    `json:"id" validate:"required"`
 		UserName string `json:"username" validate:"required"`
 		Password string `json:"password" validate:"required"`
 		Genre    string `json:"genre" validate:"required"`

@@ -113,11 +113,14 @@ func (c *ArtistController) GetArtist(ctx *gin.Context) {
 
 func (c *ArtistController) UpdateArtist(ctx *gin.Context) {
 	req := new(model.UpdateArtistRequest)
+	auth := middleware.GetProfile(ctx)
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		c.Log.Warnf("failed to bind request to JSON: %+v", err)
 		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 	}
+
+	req.ID = auth.UserID
 
 	rsp, err := c.Service.UpdateArtist(ctx.Request.Context(), req)
 	if err != nil {

@@ -172,24 +172,32 @@ func (s *ArtistService) UpdateArtist(ctx context.Context, req *model.UpdateArtis
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	artist := &entity.Artist{
-		Password: string(password),
-		UserName: req.UserName,
-		Genre:    req.Genre,
-		Bio:      req.Bio,
+	var artist entity.Artist
+	if err := tx.First(&artist, req.ID).Error; err != nil {
+		s.Log.Warnf("artist not found: %+v", err)
+		return nil, errs.ERROR_NOT_FOUND
 	}
 
-	err = s.ArtistRepository.Update(s.DB, artist)
+	artist.Password = string(password)
+	artist.UserName = req.UserName
+	artist.Genre = req.Genre
+	artist.Bio = req.Bio
+
+	err = s.ArtistRepository.Update(tx, &artist)
 	if err != nil {
 		s.Log.Warnf("failed to update: %+v", err)
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
+	artist.RefreshToken = ""
+	artist.Token = ""
+
 	if err := tx.Commit().Error; err != nil {
 		s.Log.Warnf("failed commit transaction : %+v", err)
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
-	return nil, nil
+
+	return converter.ArtistToReponse(&artist), nil
 }
 
 func (s *ArtistService) LogoutArtist(ctx context.Context, req *model.LogoutArtistRequest) error {

@@ -27,6 +27,10 @@ func (c *RouteConfig) SetupGuestRoute() {
 	c.App.POST("/api/v1/user/register", c.UserController.RegisterUser)
 	c.App.POST("/api/v1/user/login", c.UserController.Login)
 	c.App.GET("/api/v1/user/:id", c.UserController.GetUser)
+	c.App.POST("/api/v1/artist/register", c.ArtistController.RegisterArtist)
+	c.App.GET("/api/v1/artist/:id", c.ArtistController.GetArtist)
+	c.App.POST("api/v1/artist/login", c.ArtistController.LoginArtist)
+	c.App.POST("/api/v1/user/admin/register", c.UserController.RegisterAdmin)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
@@ -42,11 +46,9 @@ func (c *RouteConfig) SetupArtistRoute() {
 	artistGroup := c.App.Group("/api/v1/artist")
 	artistGroup.Use(c.ArtistMiddelware)
 	{
+		// TODO: fix update artist instead create new
 		artistGroup.PUT("/update", c.ArtistController.UpdateArtist)
 		artistGroup.DELETE("/logout", c.ArtistController.LogoutArtist)
-		artistGroup.POST("/register", c.ArtistController.RegisterArtist)
-		artistGroup.POST("/login", c.ArtistController.LoginArtist)
-		artistGroup.GET("/:id", c.ArtistController.GetArtist)
 	}
 }
 
@@ -54,7 +56,7 @@ func (c *RouteConfig) SetupAdminRoute() {
 	adminGroup := c.App.Group("/api/v1/user/admin")
 	adminGroup.Use(c.AdminMiddleware)
 	{
-		adminGroup.POST("/register", c.UserController.RegisterAdmin)
+		// TODO: fix delete artist unauthorized
 		adminGroup.DELETE("/artist/delete/:id", c.ArtistController.DeleteArtist)
 		adminGroup.DELETE("/user/delete/:id", c.UserController.DeleteUser)
 	}

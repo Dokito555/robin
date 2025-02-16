@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -24,6 +25,7 @@ func NewAuth(userService *services.UserService, tokenService *services.TokenServ
 			return
 		}
 
+		fmt.Println("[MIDDLEWARE] CLAIM ROLE:", claim.Role)
 		if claim.Role != requiredRole {
 			ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden - " + requiredRole + " access required"})
 			ctx.Abort()
