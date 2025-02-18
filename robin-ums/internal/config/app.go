@@ -26,17 +26,13 @@ type BootstrapConfig struct {
 func Bootstrap(config *BootstrapConfig) {
 	// setup repo
 	userRepository := repository.NewUserRepository(config.Log, config.DB)
-	artistRepository := repository.NewAristRepository(config.Log, config.DB)
-
 	// setup services
 	tokenService := services.NewTokenService(config.Log, config.Config)
 	userService := services.NewUserService(config.DB, config.Log, config.Validate, userRepository, tokenService)
-	artistService := services.NewArtistService(config.DB, config.Log, config.Validate, artistRepository, tokenService)
 
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)
 	userController := http.NewUserController(config.Log, userService)
-	artistController := http.NewArtistController(config.Log, artistService)
 	tokenValidationController := grpc.NewTokenValidationController(tokenService, config.Log)
 
 	// setup middleware
@@ -49,7 +45,6 @@ func Bootstrap(config *BootstrapConfig) {
 		App:              config.App,
 		HealthController: healthController,
 		UserController:   userController,
-		ArtistController: artistController,
 		UserMiddleware:   userMiddleware,
 		AdminMiddleware:  adminMiddleware,
 		ArtistMiddelware: artistMiddleware,

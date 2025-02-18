@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Dokito555/robin-artist/internal/delivery/grpc"
 	"github.com/Dokito555/robin-artist/internal/delivery/http"
 	"github.com/Dokito555/robin-artist/internal/delivery/http/middleware"
 	"github.com/Dokito555/robin-artist/internal/delivery/http/route"
@@ -32,6 +33,7 @@ func Bootstrap(config *BootstrapConfig) {
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)
 	artistController := http.NewArtistController(config.Log, artistService)
+	tokenValidationController := grpc.NewTokenValidationController(tokenService, config.Log)
 
 	// setup middleware
 	middleeware := middleware.NewAuth(artistService, tokenService)
@@ -43,6 +45,13 @@ func Bootstrap(config *BootstrapConfig) {
 		ArtistController: artistController,
 		AuthMiddleware: middleeware,
 	}
+
+	grpcConfig := grpc.GrpcConfig{
+		Log: config.Log,
+		Viper: config.Config,
+		TokenValidationController: tokenValidationController,
+	}
 	
 	routeConfig.Setup()
+	go grpcConfig.Setup()
 }

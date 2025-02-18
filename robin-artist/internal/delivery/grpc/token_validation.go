@@ -12,13 +12,13 @@ import (
 
 type TokenValidationController struct {
 	TokenService *services.TokenService
-	Log *logrus.Logger
+	Log          *logrus.Logger
 	token_validation_proto.UnimplementedTokenValidationServer
 }
 
 func NewTokenValidationController(service *services.TokenService, log *logrus.Logger) *TokenValidationController {
 	return &TokenValidationController{
-		Log: log,
+		Log:          log,
 		TokenService: service,
 	}
 }
@@ -27,6 +27,8 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 	var (
 		token = req.GetToken()
 	)
+
+	s.Log.Info("Received token validation request")
 
 	if token == "" {
 		s.Log.Warnf("token is empty")
@@ -44,12 +46,24 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 		}, err
 	}
 
+	if claimToken.UserID == 0 || claimToken.Role == "" {
+        return nil, fmt.Errorf("invalid token data: missing required fields")
+    }
+
+	s.Log.WithFields(logrus.Fields{
+        "userId": claimToken.UserID,
+        "email":  claimToken.Email,
+		"username": claimToken.UserName,
+        "role":   claimToken.Role,
+    }).Info("Token validated successfully")
+
 	return &token_validation_proto.TokenResponse{
 		Message: constants.STATUS_SUCCESS,
 		Data: &token_validation_proto.UserData{
 			UserId: int64(claimToken.UserID),
-			Email: claimToken.Email,
-			Role: claimToken.Role,
+			Email:  claimToken.Email,
+			Username: claimToken.UserName,
+			Role:   claimToken.Role,
 		},
 	}, nil
 }

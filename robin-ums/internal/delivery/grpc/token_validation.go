@@ -54,6 +54,7 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 	s.Log.WithFields(logrus.Fields{
         "userId": claimToken.UserID,
         "email":  claimToken.Email,
+		"username": claimToken.UserName,
         "role":   claimToken.Role,
     }).Info("Token validated successfully")
 
@@ -62,6 +63,7 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 		Data: &token_validation_proto.UserData{
 			UserId: int64(claimToken.UserID),
 			Email:  claimToken.Email,
+			Username: claimToken.UserName,
 			Role:   claimToken.Role,
 		},
 	}, nil

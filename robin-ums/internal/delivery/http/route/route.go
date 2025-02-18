@@ -9,7 +9,6 @@ type RouteConfig struct {
 	App              *gin.Engine
 	HealthController *http.HealthController
 	UserController   *http.UserController
-	ArtistController *http.ArtistController
 	UserMiddleware   gin.HandlerFunc
 	AdminMiddleware  gin.HandlerFunc
 	ArtistMiddelware gin.HandlerFunc
@@ -19,7 +18,6 @@ func (c *RouteConfig) Setup() {
 	c.SetupGuestRoute()
 	c.SetupAuthRoute()
 	c.SetupAdminRoute()
-	c.SetupArtistRoute()
 }
 
 func (c *RouteConfig) SetupGuestRoute() {
@@ -27,9 +25,6 @@ func (c *RouteConfig) SetupGuestRoute() {
 	c.App.POST("/api/v1/user/register", c.UserController.RegisterUser)
 	c.App.POST("/api/v1/user/login", c.UserController.Login)
 	c.App.GET("/api/v1/user/:id", c.UserController.GetUser)
-	// c.App.POST("/api/v1/artist/register", c.ArtistController.RegisterArtist)
-	// c.App.GET("/api/v1/artist/:id", c.ArtistController.GetArtist)
-	// c.App.POST("api/v1/artist/login", c.ArtistController.LoginArtist)
 	c.App.POST("/api/v1/user/admin/register", c.UserController.RegisterAdmin)
 }
 
@@ -42,20 +37,12 @@ func (c *RouteConfig) SetupAuthRoute() {
 	}
 }
 
-func (c *RouteConfig) SetupArtistRoute() {
-	artistGroup := c.App.Group("/api/v1/artist")
-	artistGroup.Use(c.ArtistMiddelware)
-	{
-		// artistGroup.PUT("/update", c.ArtistController.UpdateArtist)
-		// artistGroup.DELETE("/logout", c.ArtistController.LogoutArtist)
-	}
-}
 
 func (c *RouteConfig) SetupAdminRoute() {
 	adminGroup := c.App.Group("/api/v1/user/admin")
 	adminGroup.Use(c.AdminMiddleware)
 	{
-		adminGroup.DELETE("/artist/delete/:id", c.ArtistController.DeleteArtist)
+		// adminGroup.DELETE("/artist/delete/:id", c.ArtistController.DeleteArtist)
 		adminGroup.DELETE("/user/delete/:id", c.UserController.DeleteUser)
 	}
 }
