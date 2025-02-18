@@ -1,0 +1,21 @@
+package converter
+
+import (
+	"github.com/Dokito555/robin-artist/internal/entity"
+	model "github.com/Dokito555/robin-artist/internal/model"
+)
+
+func ArtistToReponse(artist *entity.Artist) *model.ArtistResponse {
+	return &model.ArtistResponse{
+		ID:           artist.ID,
+		Email:        artist.Email,
+		UserName:     artist.UserName,
+		Role:         artist.Role,
+		Bio:          artist.Bio,
+		Genre:        artist.Genre,
+		Token:        artist.Token,
+		RefreshToken: artist.RefreshToken,
+		CreatedAt:    artist.CreatedAt,
+		UpdatedAt:    artist.UpdatedAt,
+	}
+}
