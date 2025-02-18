@@ -38,7 +38,7 @@ func NewAuth(ums *ums.UMS, tokenService *services.TokenService) gin.HandlerFunc 
 			return
 		}
 
-		if claimToken.Role != constants.ROLE_ADMIN && claimToken.Role != constants.ROLE_ARTIST {
+		if claimToken.Role != constants.ROLE_ADMIN && claimToken.Role != constants.ROLE_USER {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
 			ctx.Abort()
 			return

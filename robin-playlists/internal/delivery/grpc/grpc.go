@@ -12,7 +12,6 @@ import (
 type GrpcConfig struct {
 	Log *logrus.Logger
 	Viper *viper.Viper
-	TokenValidationController *TokenValidationController
 }
 
 func (c *GrpcConfig) Setup() {

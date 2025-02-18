@@ -21,7 +21,7 @@ type PlaylistService struct {
 	PlaylistRepository *repository.PlaylistRepository
 }
 
-func NewPlaylistRepository(db *gorm.DB, log *logrus.Logger, validator *validator.Validate, Repo *repository.PlaylistRepository) *PlaylistService {
+func NewPlaylistService(db *gorm.DB, log *logrus.Logger, validator *validator.Validate, Repo *repository.PlaylistRepository) *PlaylistService {
 	return &PlaylistService{
 		DB:                 db,
 		Log:                log,
