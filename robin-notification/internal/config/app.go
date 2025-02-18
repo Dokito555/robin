@@ -1,6 +1,8 @@
 package config
 
 import (
+	"github.com/Dokito555/robin-notification/internal/delivery/http"
+	"github.com/Dokito555/robin-notification/internal/delivery/http/route"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
