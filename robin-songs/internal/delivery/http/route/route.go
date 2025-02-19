@@ -1,12 +1,14 @@
 package route
 
 import (
+	"github.com/Dokito555/robin-songs/internal/delivery/http"
 	"github.com/gin-gonic/gin"
 )
 
 type RouteConfig struct {
 	App              *gin.Engine
 	HealthController *http.HealthController
+	SongController   *http.SongController
 	AuthMiddleware   gin.HandlerFunc
 }
 

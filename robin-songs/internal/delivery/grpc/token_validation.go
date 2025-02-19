@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	token_validation_proto "github.com/Dokito555/robin-songs/internal/delivery/grpc/proto/token"
+	"github.com/Dokito555/robin-songs/internal/services"
+	"github.com/Dokito555/robin-songs/utils/constants"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,7 +38,7 @@ func (s *TokenValidationController) ValidateToken(ctx context.Context, req *toke
 
 	claimToken, err := s.TokenService.ValidateToken(ctx, token)
 	if err != nil {
-		s.Log.Warnf("failed to validate token")
+		s.Log.Warnf("failed to validate token`")
 		return &token_validation_proto.TokenResponse{
 			Message: err.Error(),
 		}, err
