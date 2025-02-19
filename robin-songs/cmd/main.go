@@ -1,5 +1,7 @@
 package main
 
+import "github.com/Dokito555/robin-songs/internal/config"
+
 func main() {
 	// init configs
 	viperConfig := config.NewViper()
@@ -7,6 +9,7 @@ func main() {
 	db := config.NewDatabase(viperConfig, log)
 	validate := config.NewValidator(viperConfig)
 	app := config.NewGin(viperConfig)
+	s3 := config.NewS3Client(viperConfig, log)
 	// should be grpc
 
 	// inject configs to app
@@ -16,12 +19,13 @@ func main() {
 		Log:      log,
 		Validate: validate,
 		Config:   viperConfig,
+		S3Client: s3,
 	})
 
 	// run app
 	port := viperConfig.GetString("APP_PORT")
-	err := app.Run(":"+port)
-	log.Info("Listening to port: "+port)
+	err := app.Run(":" + port)
+	log.Info("Listening to port: " + port)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

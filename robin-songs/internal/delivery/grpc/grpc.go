@@ -12,7 +12,6 @@ import (
 type GrpcConfig struct {
 	Log *logrus.Logger
 	Viper *viper.Viper
-	TokenValidationController *TokenValidationController
 }
 
 func (c *GrpcConfig) Setup() {
@@ -26,8 +25,6 @@ func (c *GrpcConfig) RunGrpc() {
 	}
 
 	s := grpc.NewServer()
-
-	token_validation_proto.RegisterTokenValidationServer(s, c.TokenValidationController)
 	
 	logrus.Info("listening to grpc port: " + c.Viper.GetString("GRPC_PORT"))
 	if err := s.Serve(lis); err != nil {
