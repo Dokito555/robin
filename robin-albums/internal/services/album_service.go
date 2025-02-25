@@ -169,3 +169,39 @@ func (s *AlbumService) DeleteAlbum(ctx context.Context, req *model.DeleteAlbumRe
 
 	return nil
 }
+
+func (s *AlbumService) GetAlbumListByArtistID(ctx context.Context, req *model.GetAlbumRequest) ([]model.AlbumResponse, error) {
+	s.Log.Info("starting Get List Albums function")
+	s.Log.Infof("request received: %+v", req)
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	if req.ID == 0 {
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	albums, err := s.AlbumRepository.AlbumListByArtistID(s.DB, req.ID)
+	if err != nil {
+		s.Log.Warn("failed to get list of albums in database")
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	rsps := make([]model.AlbumResponse, len(albums))
+	for i, album := range albums {
+		rsps[i] = *converter.AlbumToResponse(&album)
+	}
+
+	return rsps, nil
+}

@@ -48,7 +48,6 @@ func (s *SongService) CreateNewSong(ctx context.Context, req *model.CreateSongRe
 		return nil, errs.ERROR_BAD_REQUEST
 	}
 
-	// TODO: setup up s3 client here, upload song to s3
 	// call upload file to s3 and return link
 	fileName := fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), fileReq.FileHeader.Filename)
 	file := &model.File{

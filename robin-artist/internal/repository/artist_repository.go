@@ -38,3 +38,16 @@ func (r *ArtistRepository) FindByEmail(db *gorm.DB, user *entity.Artist, email s
 	}
 	return user, nil
 }
+
+func (r *ArtistRepository) GetArtistList(db *gorm.DB, page int, limit int) ([]entity.Artist, error) {
+	var (
+		artists = []entity.Artist{}
+		offset = (page - 1) * limit
+	)
+
+	if err := db.Limit(limit).Offset(offset).Find(&artists).Error; err != nil {
+		return nil, err
+	}
+
+	return artists, nil
+}

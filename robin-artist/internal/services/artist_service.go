@@ -327,3 +327,32 @@ func (s *ArtistService) Verify(ctx context.Context, req *model.VerifyRequest) (*
 
 	return converter.ArtistToReponse(rsp), nil
 }
+
+func (s *ArtistService) GetArtistList(ctx context.Context, page int, limit int) ([]model.ArtistResponse, error) {
+	s.Log.Info("starting Get List Artist function")
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	if page == 0 || limit == 0 {
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	artists, err := s.ArtistRepository.GetArtistList(s.DB, page, limit)
+	if err != nil {
+		s.Log.Warn("failed to get list of artists in database")
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	rsps := make([]model.ArtistResponse, len(artists))
+	for i, artist := range artists {
+		rsps[i] = *converter.ArtistToReponse(&artist)
+	}
+
+	return rsps, nil
+}

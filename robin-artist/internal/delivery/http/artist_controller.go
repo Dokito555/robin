@@ -52,7 +52,6 @@ func (c *ArtistController) RegisterArtist(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
-	return
 }
 
 func (c *ArtistController) LoginArtist(ctx *gin.Context) {
@@ -75,7 +74,6 @@ func (c *ArtistController) LoginArtist(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
-	return
 }
 
 func (c *ArtistController) GetArtist(ctx *gin.Context) {
@@ -108,7 +106,6 @@ func (c *ArtistController) GetArtist(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
-	return
 }
 
 func (c *ArtistController) UpdateArtist(ctx *gin.Context) {
@@ -134,7 +131,6 @@ func (c *ArtistController) UpdateArtist(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: rsp})
-	return
 }
 
 func (c *ArtistController) LogoutArtist(ctx *gin.Context) {
@@ -160,7 +156,6 @@ func (c *ArtistController) LogoutArtist(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: nil})
-	return
 }
 
 func (c *ArtistController) DeleteArtist(ctx *gin.Context) {
@@ -201,5 +196,38 @@ func (c *ArtistController) DeleteArtist(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.ArtistResponse]{Message: http.StatusOK, Data: nil})
-	return
+}
+
+func (c *ArtistController) GetArtistList(ctx *gin.Context) {
+	var (
+		pageStr = ctx.DefaultQuery("page", "1")
+		limitStr = ctx.DefaultQuery("limit", "10")
+	)
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert page string to int")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert limit string to int")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
+		return
+	}
+
+	rsps, err := c.Service.GetArtistList(ctx.Request.Context(), page, limit)
+	if err != nil {
+		c.Log.Warnf("failed to get artist list: %+v", err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
+		return
+	}
+	
+	ctx.JSON(http.StatusOK, model.BaseResponse[[]model.ArtistResponse]{Message: http.StatusOK, Data: rsps})
 }

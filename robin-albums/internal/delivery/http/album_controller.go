@@ -172,3 +172,35 @@ func (c *AlbumController) DeleteAlbum(ctx *gin.Context) {
 	
 	ctx.JSON(http.StatusOK, model.BaseResponse[bool]{Message: http.StatusOK, Data: true})
 }
+
+func (c *AlbumController) GetAlbumListByArtistID(ctx *gin.Context) {
+	req := new(model.GetAlbumRequest)
+	idStr := ctx.Param("id")
+	if idStr == "" {
+		c.Log.Warnf("id is empty")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert id string to int")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
+		return
+	}
+
+	req.ID = id
+
+	rsps, err := c.AlbumService.GetAlbumListByArtistID(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to get album list: %+v", err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
+		return
+	}
+	
+	ctx.JSON(http.StatusOK, model.BaseResponse[[]model.AlbumResponse]{Message: http.StatusOK, Data: rsps})
+}
