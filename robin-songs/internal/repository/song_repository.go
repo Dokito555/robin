@@ -40,19 +40,18 @@ func (r *SongRepository) GetFileFromS3(bucketName, fileName string) (string, err
 		return "", err
 	}
 
-
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, fileName)
 	return url, nil
 }
 
-func (r *SongRepository) UploadFileToS3(bucketName string, model model.File) (string, error) {
-	// Timemout after 30 seconds
+func (r *SongRepository) UploadFileToS3(bucketName string, model *model.File) (string, error) {
+	// timemout after 30 seconds
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	// Read file (might be not necessary)
-	fileStat, _ := model.File.Seek(0, 2) // Get file size
-	model.File.Seek(0, 0)                // Reset the file pointer
+	// read file (might be not necessary)
+	fileStat, _ := model.File.Seek(0, 2) // get file size
+	model.File.Seek(0, 0)                // reset the file pointer
 	buffer := make([]byte, fileStat)
 	model.File.Read(buffer)
 

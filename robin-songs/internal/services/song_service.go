@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/Dokito555/robin-songs/internal/entity"
 	"github.com/Dokito555/robin-songs/internal/model"
@@ -11,6 +13,7 @@ import (
 	"github.com/Dokito555/robin-songs/utils/errs"
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -18,19 +21,21 @@ type SongService struct {
 	Log            *logrus.Logger
 	DB             *gorm.DB
 	Validate       *validator.Validate
+	Viper          *viper.Viper
 	SongRepository *repository.SongRepository
-	TokenService   *TokenService
 }
 
-func NewSongService(log *logrus.Logger, db *gorm.DB, repo *repository.SongRepository) *SongService {
+func NewSongService(log *logrus.Logger, db *gorm.DB, validate *validator.Validate, viper *viper.Viper, repo *repository.SongRepository) *SongService {
 	return &SongService{
 		Log:            log,
 		DB:             db,
+		Validate:       validate,
+		Viper:          viper,
 		SongRepository: repo,
 	}
 }
 
-func (s *SongService) CreateNewSong(ctx context.Context, req *model.CreateSongRequest) (*model.SongResponse, error) {
+func (s *SongService) CreateNewSong(ctx context.Context, req *model.CreateSongRequest, fileReq *model.UploadFileRequest) (*model.SongResponse, error) {
 	s.Log.Info("starting Create New Song Function")
 	s.Log.Infof("request received: %+v", req)
 
@@ -44,13 +49,25 @@ func (s *SongService) CreateNewSong(ctx context.Context, req *model.CreateSongRe
 	}
 
 	// TODO: setup up s3 client here, upload song to s3
+	// call upload file to s3 and return link
+	fileName := fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), fileReq.FileHeader.Filename)
+	file := &model.File{
+		File:     fileReq.File,
+		FileName: fileName,
+	}
+
+	url, err := s.SongRepository.UploadFileToS3(viper.GetString("AWS_SONG_BUCKET"), file)
+	if err != nil {
+		s.Log.Println(viper.GetString("AWS_SONG_BUCKET"))
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
 	// TODO: check if current user already have song
 
 	newSong := &entity.Song{
 		ArtistID: req.ArtistID,
 		AlbumID:  req.AlbumID,
 		Name:     req.Name,
-		Link:     req.Link,
+		Link:     url,
 		Duration: req.Duration,
 	}
 

@@ -10,7 +10,6 @@ type (
 		ArtistID int    `json:"artist_id" validate:"required"`
 		AlbumID  int    `json:"album_id" validate:"required"`
 		Name     string `json:"name" validate:"required"`
-		Link     string `json:"link" validate:"required"`
 		Duration int    `json:"duration" validate:"required"`
 	}
 
@@ -27,6 +26,11 @@ type (
 
 	DeleteSongRequest struct {
 		ID int `json:"id" validate:"required"`
+	}
+
+	UploadFileRequest struct {
+		File       multipart.File        `json:"file"`
+		FileHeader *multipart.FileHeader `json:"fileHeader"`
 	}
 )
 

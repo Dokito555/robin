@@ -33,7 +33,7 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// setup services
 	tokenService := services.NewTokenService(config.Log, config.Config)
-	songService := services.NewSongService(config.Log, config.DB, songRepository)
+	songService := services.NewSongService(config.Log, config.DB, config.Validate, config.Config, songRepository)
 
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)
