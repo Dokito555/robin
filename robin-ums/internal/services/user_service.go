@@ -322,3 +322,32 @@ func (s *UserService) Verify(ctx context.Context, req *model.VerifyRequest) (*mo
 
 	return converter.UserToResponse(rsp), nil
 }
+
+func (s *UserService) GetUsers(ctx context.Context, page int, limit int) ([]model.UserResponse, error) {
+	s.Log.Info("starting get users function")
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	if page == 0 || limit == 0 {
+		s.Log.Warn("page or limit is invalid")
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	users, err := s.UserRepository.GetUserList(s.DB, page, limit)
+	if err != nil {
+		s.Log.Warn("failed to get users in database")
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	rsps := make([]model.UserResponse, len(users))
+	for i, user := range users {
+		rsps[i] = *converter.UserToResponse(&user)
+	}
+	
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed commit transaction : %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	return rsps, nil
+}

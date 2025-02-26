@@ -168,3 +168,40 @@ func (s *PlaylistService) DeletePlaylist(ctx context.Context, req *model.DeleteP
 
 	return nil
 }
+
+func (s *PlaylistService) GetPlaylistList(ctx context.Context, req *model.GetPlaylistRequest) ([]model.PlaylistResponse, error) {
+	s.Log.Info("starting Get Playlist List function")
+	s.Log.Infof("request received: %+v", req)
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	if req.ID == 0 {
+		s.Log.Warn("user id not found")
+		return nil, errs.ERROR_NOT_FOUND
+	}
+
+	playlists, err := s.PlaylistRepository.GetPlaylistList(s.DB, req.ID)
+	if err != nil {
+		s.Log.Warn("failed to get playlits from database")
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	rsps := make([]model.PlaylistResponse, len(playlists))
+	for i, playlist := range playlists {
+		rsps[i] = *converter.PlaylistToResponse(&playlist)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	return rsps, nil
+}

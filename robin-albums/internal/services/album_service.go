@@ -193,14 +193,14 @@ func (s *AlbumService) GetAlbumListByArtistID(ctx context.Context, req *model.Ge
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		s.Log.Warnf("failed to commit transaction: %+v", err)
-		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
-	}
-
 	rsps := make([]model.AlbumResponse, len(albums))
 	for i, album := range albums {
 		rsps[i] = *converter.AlbumToResponse(&album)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	return rsps, nil

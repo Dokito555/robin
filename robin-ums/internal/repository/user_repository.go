@@ -38,3 +38,16 @@ func (r *UserRepository) FindByEmail(db *gorm.DB, user *entity.User, email strin
 	}
 	return user, nil
 }
+
+func (r *UserRepository) GetUserList(db *gorm.DB, page int, limit int) ([]entity.User, error) {
+	var (
+		users []entity.User
+		offset = (page - 1) * limit
+	)
+
+	if err := db.Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}

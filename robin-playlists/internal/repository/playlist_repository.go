@@ -17,3 +17,11 @@ func NewPlaylistRepository(log *logrus.Logger, db *gorm.DB) *PlaylistRepository 
 		Log:        log,
 	}
 }
+
+func (r *PlaylistRepository) GetPlaylistList(db *gorm.DB, id int) ([]entity.Playlist, error) {
+	var playlists []entity.Playlist
+	if err := db.Where("user_id == ?", id).Find(&playlists).Error; err != nil {
+		return nil, err
+	}
+	return playlists, nil
+}

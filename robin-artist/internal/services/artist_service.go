@@ -344,14 +344,15 @@ func (s *ArtistService) GetArtistList(ctx context.Context, page int, limit int) 
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		s.Log.Warnf("failed to commit transaction: %+v", err)
-		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
-	}
-
 	rsps := make([]model.ArtistResponse, len(artists))
 	for i, artist := range artists {
 		rsps[i] = *converter.ArtistToReponse(&artist)
+	}
+
+
+	if err := tx.Commit().Error; err != nil {
+		s.Log.Warnf("failed to commit transaction: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
 	return rsps, nil

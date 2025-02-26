@@ -174,3 +174,34 @@ func (c *PlaylistController) DeletePlaylist(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[bool]{Message: http.StatusOK, Data: true})
 }
+
+func (c *PlaylistController) GetPlaylistList(ctx *gin.Context) {
+	auth := middleware.GetProfile(ctx)
+	req := new(model.GetPlaylistRequest)
+	if auth.Role != constants.ROLE_USER {
+		c.Log.Warn("auth role is not user")
+		ctx.JSON(http.StatusUnauthorized, errs.ERROR_UNAUTHORIZED)
+		return
+	}
+
+	if auth.UserID == 0 {
+		c.Log.Warn("user id is invalid")
+		ctx.JSON(http.StatusUnauthorized, errs.ERROR_UNAUTHORIZED)
+		return
+	}
+
+	req.ID = auth.UserID
+
+	rsps, err := c.PlaylistService.GetPlaylistList(ctx.Request.Context(), req)
+	if err != nil {
+		c.Log.Warnf("failed to get playlist list: %+v", err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[[]model.PlaylistResponse]{Message: http.StatusOK, Data: rsps})
+}

@@ -194,7 +194,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 
 	err = c.Service.DeleteUser(ctx.Request.Context(), req)
 	if err != nil {
-		c.Log.Warnf("failed to get user: %v", err)
+		c.Log.Warnf("failed to delete user: %v", err)
 		appErr, ok := err.(*errs.AppError)
 		if !ok {
 			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
@@ -240,7 +240,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 
 	rsp, err := c.Service.UpdateUser(ctx.Request.Context(), req)
 	if err != nil {
-		c.Log.Warnf("failed to login user: %+v", err)
+		c.Log.Warnf("failed to update user: %+v", err)
 		appErr, ok := err.(*errs.AppError)
 		if !ok {
 			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
@@ -251,4 +251,38 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.UserResponse]{Message: http.StatusOK, Data: rsp})
 	return
+}
+
+func (c *UserController) GetUsers(ctx *gin.Context) {
+	var (
+		pageStr = ctx.DefaultQuery("page", "1")
+		limitStr = ctx.DefaultQuery("limit", "10")
+	)
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert page string to int")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert limit string to int")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
+		return
+	}
+
+	rsps, err := c.Service.GetUsers(ctx.Request.Context(), page, limit)
+	if err != nil {
+		c.Log.Warnf("failed to login user: %+v", err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[[]model.UserResponse]{Message: http.StatusOK, Data: rsps})
 }
