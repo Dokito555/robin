@@ -35,6 +35,11 @@ type (
 	VerifyRequest struct {
 		Token string `json:"token"`
 	}
+
+	RegisterPayload struct {
+		UserName string `json:"username"`
+		Role     string `json:"role"`
+	}
 )
 
 type (
