@@ -9,3 +9,5 @@ todo:
 - logger
 - monitor
 - deployment
+
+- Register -> Kafka (User Registered Topic) -> Notification Service -> Email Service
