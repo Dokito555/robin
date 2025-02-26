@@ -22,7 +22,7 @@ func (c *RouteConfig) SetupGuestRoute() {
 	c.App.POST("/api/v1/artist/register", c.ArtistController.RegisterArtist)
 	c.App.GET("/api/v1/artist/:id", c.ArtistController.GetArtist)
 	c.App.POST("/api/v1/artist/login", c.ArtistController.LoginArtist)
-	c.App.GET("/api/v1/artist/", c.ArtistController.GetArtistList)
+	c.App.GET("/api/v1/artist/list", c.ArtistController.GetArtistList)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {

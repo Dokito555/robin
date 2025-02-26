@@ -26,7 +26,7 @@ func (c *RouteConfig) SetupGuestRoute() {
 	c.App.POST("/api/v1/user/login", c.UserController.Login)
 	c.App.GET("/api/v1/user/:id", c.UserController.GetUser)
 	c.App.POST("/api/v1/user/admin/register", c.UserController.RegisterAdmin)
-	c.App.GET("/api/v1/user/", c.UserController.GetUsers)
+	c.App.GET("/api/v1/user/list", c.UserController.GetUsers)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
