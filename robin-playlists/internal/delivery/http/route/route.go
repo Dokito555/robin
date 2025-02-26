@@ -29,5 +29,6 @@ func (c *RouteConfig) SetupAuthRoute() {
 		playlistGroup.POST("", c.PlaylistController.CreatePlaylist)
 		playlistGroup.PUT("/:id", c.PlaylistController.UpdatePlaylist)
 		playlistGroup.DELETE("/:id", c.PlaylistController.DeletePlaylist)
+		playlistGroup.GET("", c.PlaylistController.GetPlaylistList)
 	}
 }

@@ -20,6 +20,7 @@ func (c *RouteConfig) Setup() {
 func (c *RouteConfig) SetupGuestRoute() {
 	c.App.GET("/api/healthcheck", c.HealthController.Healthcheck)
 	c.App.GET("/api/v1/album/:id", c.AlbumController.GetAlbum)
+	c.App.GET("/api/v1/album/:id", c.AlbumController.GetAlbumListByArtistID)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
