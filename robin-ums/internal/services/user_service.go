@@ -124,7 +124,7 @@ func (s *UserService) Register(ctx context.Context, req *model.RegisterUserReque
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	err = ProduceKafkaMessage(s.Producer, s.Log, s.Config.GetString("KAFKA_REGISTER_BROKER"), jsonPayload )
+	err = ProduceKafkaMessage(s.Producer, s.Log, s.Config.GetString("KAFKA_REGISTER_TOPIC"), jsonPayload )
 	if err != nil {
 		// TODO: if kafka failed the registration system also failed
 		// error should be optional?
