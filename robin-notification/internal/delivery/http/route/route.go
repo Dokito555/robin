@@ -6,9 +6,10 @@ import (
 )
 
 type RouteConfig struct {
-	App              *gin.Engine
-	HealthController *http.HealthController
-	AuthMiddleware   gin.HandlerFunc
+	App                    *gin.Engine
+	HealthController       *http.HealthController
+	NotificationController *http.NotificationController
+	AuthMiddleware         gin.HandlerFunc
 }
 
 func (c *RouteConfig) Setup() {

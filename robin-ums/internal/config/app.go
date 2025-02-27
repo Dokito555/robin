@@ -17,20 +17,22 @@ import (
 )
 
 type BootstrapConfig struct {
-	DB       *gorm.DB
-	App      *gin.Engine
-	Log      *logrus.Logger
-	Validate *validator.Validate
-	Config   *viper.Viper
-	Kafka    sarama.SyncProducer
+	DB            *gorm.DB
+	App           *gin.Engine
+	Log           *logrus.Logger
+	Validate      *validator.Validate
+	Config        *viper.Viper
+	KafkaProducer sarama.SyncProducer
 }
 
 func Bootstrap(config *BootstrapConfig) {
 	// setup repo
 	userRepository := repository.NewUserRepository(config.Log, config.DB)
+	
 	// setup services
+	messagingService := services.NewMessagingService(config.Log, config.KafkaProducer)
 	tokenService := services.NewTokenService(config.Log, config.Config)
-	userService := services.NewUserService(config.DB, config.Log, config.Config, config.Validate, config.Kafka, userRepository, tokenService)
+	userService := services.NewUserService(config.DB, config.Log, config.Config, config.Validate, config.KafkaProducer, userRepository, tokenService, messagingService)
 
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)

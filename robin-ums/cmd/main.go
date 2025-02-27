@@ -15,12 +15,12 @@ func main() {
 
 	// inject configs to app
 	config.Bootstrap(&config.BootstrapConfig{
-		DB:       db,
-		App:      app,
-		Log:      log,
-		Validate: validate,
-		Config:   viperConfig,
-		Kafka:    kafkaProducer,
+		DB:            db,
+		App:           app,
+		Log:           log,
+		Validate:      validate,
+		Config:        viperConfig,
+		KafkaProducer: kafkaProducer,
 	})
 
 	// run app

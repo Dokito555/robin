@@ -27,19 +27,3 @@ func NewKafkaProducer(config *viper.Viper, log *logrus.Logger) (sarama.SyncProdu
 
 	return producer, nil
 }
-
-func ProduceKafkaMessage(producer sarama.SyncProducer, log *logrus.Logger, topic string, data []byte) error {
-	message := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.ByteEncoder(data),
-	}
-
-	partition, offset, err := producer.SendMessage(message)
-	if err != nil {
-		log.Errorf("Failed to produce message to Kafka: %v", err)
-		return err
-	}
-
-	log.Infof("Successfully produced message on topic %s, partition %d, offset %d", topic, partition, offset)
-	return nil
-}

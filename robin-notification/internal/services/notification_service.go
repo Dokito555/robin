@@ -16,17 +16,18 @@ type NotificationService struct {
 	Log                *logrus.Logger
 	EmailRepository    *repository.EmailRepository
 	TemplateRepository *repository.TemplateRepository
+	MessagingService   *MessagingService
 }
 
-func NewNotificationService(log *logrus.Logger, emailRepo *repository.EmailRepository, templateRepo *repository.TemplateRepository) *NotificationService {
+func NewNotificationService(log *logrus.Logger, emailRepo *repository.EmailRepository, templateRepo *repository.TemplateRepository, messaging *MessagingService) *NotificationService {
 	return &NotificationService{
 		Log:                log,
 		EmailRepository:    emailRepo,
 		TemplateRepository: templateRepo,
+		MessagingService:   messaging,
 	}
 }
 
-// smtp server
 func (s *NotificationService) SendEmail(ctx context.Context, req *model.InternalNotificationRequest) error {
 	s.Log.Info("starting Send Email function")
 	s.Log.Infof("request received: %+v", req)

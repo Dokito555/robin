@@ -24,40 +24,25 @@ type UserService struct {
 	DB             *gorm.DB
 	Log            *logrus.Logger
 	Validate       *validator.Validate
-	Producer 		sarama.SyncProducer
-	Config			*viper.Viper
+	Producer       sarama.SyncProducer
+	Config         *viper.Viper
 	UserRepository *repository.UserRepository
 	TokenService   *TokenService
+	Messaging      *MessagingService
 }
 
 func NewUserService(db *gorm.DB, logger *logrus.Logger, config *viper.Viper, validate *validator.Validate, producer sarama.SyncProducer,
-	userRepository *repository.UserRepository, tokenSvc *TokenService) *UserService {
+	userRepository *repository.UserRepository, tokenSvc *TokenService, Messaging *MessagingService) *UserService {
 	return &UserService{
 		DB:             db,
 		Log:            logger,
 		Validate:       validate,
-		Producer: 			producer,
-		Config: config,
+		Producer:       producer,
+		Config:         config,
 		UserRepository: userRepository,
 		TokenService:   tokenSvc,
+		Messaging:      Messaging,
 	}
-}
-
-// TODO: sperate service?
-func ProduceKafkaMessage(producer sarama.SyncProducer, log *logrus.Logger, topic string, data []byte) error {
-	message := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.ByteEncoder(data),
-	}
-
-	partition, offset, err := producer.SendMessage(message)
-	if err != nil {
-		log.Errorf("Failed to produce message to Kafka: %v", err)
-		return err
-	}
-
-	log.Infof("Successfully produced message on topic %s, partition %d, offset %d", topic, partition, offset)
-	return nil
 }
 
 func (s *UserService) Register(ctx context.Context, req *model.RegisterUserRequest) (*model.UserResponse, error) {
@@ -124,7 +109,7 @@ func (s *UserService) Register(ctx context.Context, req *model.RegisterUserReque
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	err = ProduceKafkaMessage(s.Producer, s.Log, s.Config.GetString("KAFKA_REGISTER_TOPIC"), jsonPayload )
+	err = s.Messaging.ProduceKafkaMessage(s.Config.GetString("KAFKA_REGISTER_TOPIC"), jsonPayload)
 	if err != nil {
 		// TODO: if kafka failed the registration system also failed
 		// error should be optional?
