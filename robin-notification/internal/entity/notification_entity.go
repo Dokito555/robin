@@ -28,3 +28,4 @@ type NotificationHistory struct {
 func (*NotificationHistory) TableName() string {
 	return "notification_history"
 }
+

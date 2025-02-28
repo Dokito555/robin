@@ -7,14 +7,14 @@ import (
 )
 
 type EmailRepository struct {
-	Repository[entity.NotificationHistory]
+	Repository[entity.Email]
 	Log *logrus.Logger
 }
 
 
 func NewEmailRepository(log *logrus.Logger, db *gorm.DB) *EmailRepository {
 	return &EmailRepository{
-		Repository: Repository[entity.NotificationHistory]{DB: db},
+		Repository: Repository[entity.Email]{DB: db},
 		Log: log,
 	}
 }

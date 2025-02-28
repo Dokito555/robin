@@ -24,5 +24,6 @@ type NotificationHistory struct {
 type InternalNotificationRequest struct {
 	TemplateName string `valid:"required"`
 	Recipient    string `valid:"required"`
-	Placeholder  map[string]string
+	// interface? html in string?
+	Placeholder  map[string]interface{}
 }

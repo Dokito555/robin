@@ -3,28 +3,41 @@ package services
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"html/template"
+	"time"
 
 	"github.com/Dokito555/robin-notification/internal/entity"
 	"github.com/Dokito555/robin-notification/internal/model"
 	"github.com/Dokito555/robin-notification/internal/repository"
+	"github.com/Dokito555/robin-notification/pkg/email"
 	"github.com/Dokito555/robin-notification/utils/errs"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 type NotificationService struct {
-	Log                *logrus.Logger
-	EmailRepository    *repository.EmailRepository
-	TemplateRepository *repository.TemplateRepository
-	MessagingService   *MessagingService
+	DB                     *gorm.DB
+	Log                    *logrus.Logger
+	Config                 *viper.Viper
+	EmailRepository        *repository.EmailRepository
+	TemplateRepository     *repository.TemplateRepository
+	NotificationRepository *repository.NotificationRepository
+	MessagingService       *MessagingService
+	EmailPkg               *email.EmailPkg
 }
 
-func NewNotificationService(log *logrus.Logger, emailRepo *repository.EmailRepository, templateRepo *repository.TemplateRepository, messaging *MessagingService) *NotificationService {
+func NewNotificationService(db *gorm.DB, log *logrus.Logger, config *viper.Viper, emailRepo *repository.EmailRepository, notificationRepo *repository.NotificationRepository, templateRepo *repository.TemplateRepository, messaging *MessagingService, emailPkg *email.EmailPkg) *NotificationService {
 	return &NotificationService{
-		Log:                log,
-		EmailRepository:    emailRepo,
-		TemplateRepository: templateRepo,
-		MessagingService:   messaging,
+		DB:                     db,
+		Log:                    log,
+		Config:                 config,
+		EmailRepository:        emailRepo,
+		TemplateRepository:     templateRepo,
+		NotificationRepository: notificationRepo,
+		MessagingService:       messaging,
+		EmailPkg:               emailPkg,
 	}
 }
 
@@ -36,6 +49,44 @@ func (s *NotificationService) SendEmail(ctx context.Context, req *model.Internal
 	err := s.TemplateRepository.GetTemplate(req.TemplateName, emailmplt)
 	if err != nil {
 		s.Log.Warn("failed to get template from database")
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	msgChan, errChan, closeFunc, err := s.MessagingService.ConsumeKafkaMessage(s.Config.GetString("KAFKA_REGISTER_TOPIC"))
+	if err != nil {
+		s.Log.Warn("failed to consume kafka message")
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	defer closeFunc()
+
+	var registerMessage struct {
+		Username string `json:"username"`
+		Role     string `json:"role"`
+	}
+
+	select {
+	case msg := <-msgChan:
+		s.Log.Infof("kafka message revieved: %s: ", string(msg))
+		if err := json.Unmarshal(msg, &registerMessage); err != nil {
+			s.Log.Errorf("failed to unmarshal kafka message: %v", err)
+			return errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+
+		if req.Placeholder == nil {
+			req.Placeholder = make(map[string]interface{})
+		}
+		req.Placeholder["username"] = registerMessage.Username
+		req.Placeholder["role"] = registerMessage.Role
+	case err := <-errChan:
+		s.Log.Errorf("error from kafka consumer: %v", err)
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+		// timeout 10 seconds on kafka consumer
+	case <-time.After(10 * time.Second):
+		s.Log.Warn("timeout waiting for kafka message")
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	case <-ctx.Done():
+		s.Log.Warn("context cancelled before kafka message recieved")
 		return errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
@@ -55,33 +106,40 @@ func (s *NotificationService) SendEmail(ctx context.Context, req *model.Internal
 		return errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	// email := proto.Email{
-	// 	To:      req.Recipient,
-	// 	Subject: emailTemplate.Subject,
-	// 	Body:    tpl.String(),
-	// }
+	newEmail := &entity.Email{
+		To:      req.Recipient,
+		Subject: emailmplt.Subject,
+		Body:    tpl.String(),
+	}
 
-	// err = email.SendEmail()
-	// if err != nil {
-	// 	notifHistory := &models.NotificationHistory{
-	// 		Recipient:    req.Recipient,
-	// 		TemplateID:   emailTemplate.ID,
-	// 		Status:       "failed",
-	// 		ErrorMessage: err.Error(),
-	// 	}
+	err = s.EmailPkg.SendEmail(newEmail)
+	if err != nil {
+		s.Log.Warn("failed to send email via pkg")
+		history := &entity.NotificationHistory{
+			Recipient:    req.Recipient,
+			TemplateID:   emailmplt.ID,
+			Status:       "FAILED",
+			ErrorMessage: err.Error(),
+		}
+		err = s.NotificationRepository.Create(s.DB, history)
+		if err != nil {
+			s.Log.Warn("failed to create failed email history in database")
+			return errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	}
 
-	// 	s.EmailRepo.InsertNotificationHistory(ctx, notifHistory)
-	// 	return errors.Wrap(err, "failed to send email")
-	// }
+	history := &entity.NotificationHistory{
+		Recipient:    req.Recipient,
+		TemplateID:   emailmplt.ID,
+		Status:       "SUCCESS",
+	}
 
-	// notifHistory := &models.NotificationHistory{
-	// 	Recipient:  req.Recipient,
-	// 	TemplateID: emailTemplate.ID,
-	// 	Status:     "SUCCESS",
-	// }
+	err = s.NotificationRepository.Create(s.DB, history)
+	if err != nil {
+		s.Log.Warn("failed to create email history in database")
+		return errs.ERROR_INTERNAL_SERVER_ERROR
+	}
 
-	// s.EmailRepo.InsertNotificationHistory(ctx, notifHistory)
-
-	// return nil
 	return nil
 }
