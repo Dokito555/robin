@@ -6,9 +6,10 @@ type Config struct {
 
 	LogLevel string `mapstructure:"LOG_LEVEL"`
 
-	DBHost string `mapstructure:"DB_HOST"`
-	DBPort string `mapstructure:"DB_PORT"`
-	DBName string `mapstructure:"DB_NAME"`
-	DBUser string `mapstructure:"DB_USER"`
-	DBPass string `mapstructure:"DB_PASSWORD"`
+	DBHost       string `mapstructure:"DB_HOST"`
+	DBPort       string `mapstructure:"DB_PORT"`
+	DBName       string `mapstructure:"DB_NAME"`
+	DBUser       string `mapstructure:"DB_USER"`
+	DBPass       string `mapstructure:"DB_PASSWORD"`
+	KafkaBrokers string `mapstructure:"KAFKA_BROKERS"`
 }

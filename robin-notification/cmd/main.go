@@ -10,6 +10,9 @@ func main() {
 	validate := config.NewValidator(viperConfig)
 	app := config.NewGin(viperConfig)
 	kafkaConsumer, err := config.NewKafkaConsumer(viperConfig, log)
+	if err != nil {
+		log.Fatalf("error creating kafka consumer: %v", err)
+	}
 	defer kafkaConsumer.Close()
 	// should be grpc
 

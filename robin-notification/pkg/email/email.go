@@ -23,6 +23,9 @@ func NewEmailPkg(log *logrus.Logger, config *viper.Viper) *EmailPkg {
 }
 
 func (e *EmailPkg) SendEmail(mail *entity.Email) error {
+	e.Log.Info("sending email through smtp server")
+	e.Log.Info("email recieved: %v", mail)
+
 	fromEmail := e.Config.GetString("SMTP_AUTH_EMAIL")
 	smtpHost := e.Config.GetString("SMTP_HOST")
 	smtpPass := e.Config.GetString("SMTP_AUTH_PASS")

@@ -1,21 +1,26 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"sync"
+	"time"
 
+	"github.com/Dokito555/robin-notification/internal/model"
 	"github.com/IBM/sarama"
 	"github.com/sirupsen/logrus"
 )
 
 type MessagingService struct {
-	Log      *logrus.Logger
-	Consumer sarama.Consumer
+	Log                 *logrus.Logger
+	Consumer            sarama.Consumer
+	Notifier			INotifier
 }
 
 func NewMessagingService(log *logrus.Logger, consumer sarama.Consumer) *MessagingService {
 	return &MessagingService{
-		Log:      log,
-		Consumer: consumer,
+		Log:                 log,
+		Consumer:            consumer,
 	}
 }
 
@@ -103,4 +108,45 @@ func GracefulShutdownConsumer(consumer sarama.Consumer, shutdownChan chan struct
 	}
 
 	log.Info("kafka consumer has been gracefully shut down")
+}
+
+func (m *MessagingService) SetNotifier(n INotifier) {
+	m.Notifier = n
+}
+
+// HandleKafkaMessage is a default handler function that unmarshals the Kafka message and triggers email sending.
+// It assumes that the message JSON contains "username", "role", and "recipient" fields.
+func (m *MessagingService) HandleKafkaMessage(msg []byte) error {
+	var registerMessage struct {
+		Username  string `json:"username"`
+		Role      string `json:"role"`
+		Recipient string `json:"recipient"`
+	}
+
+	if err := json.Unmarshal(msg, &registerMessage); err != nil {
+		m.Log.Errorf("Failed to unmarshal Kafka message: %v", err)
+		return err
+	}
+
+	// Build the internal notification request.
+	req := &model.InternalNotificationRequest{
+		Recipient: registerMessage.Recipient,
+		Placeholder: map[string]interface{}{
+			"username": registerMessage.Username,
+			"role":     registerMessage.Role,
+		},
+	}
+
+	// Create a context with a timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Immediately trigger the email sending process.
+	if err := m.Notifier.SendEmail(ctx, req); err != nil {
+		m.Log.Errorf("Failed to send email: %v", err)
+		return err
+	}
+
+	m.Log.Infof("Email triggered successfully for recipient %s", registerMessage.Recipient)
+	return nil
 }

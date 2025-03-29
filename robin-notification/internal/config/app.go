@@ -31,10 +31,11 @@ func Bootstrap(config *BootstrapConfig) {
 	emailRepository := repository.NewEmailRepository(config.Log, config.DB)
 	templateRepository := repository.NewTemplateRepository(config.Log, config.DB)
 	notificationRepository := repository.NewNotificationRepository(config.Log, config.DB)
-
+	
 	// setup services
 	messagingService := services.NewMessagingService(config.Log, config.KafkaConsumer)
-	notificationService := services.NewNotificationService(config.DB, config.Log, config.Config, emailRepository, notificationRepository, templateRepository, messagingService, emailPkg)
+	notificationService := services.NewNotificationService(config.DB, config.Log, config.Config, emailRepository, notificationRepository, templateRepository, emailPkg)
+	messagingService.SetNotifier(notificationService)
 
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)
