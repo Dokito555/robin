@@ -14,7 +14,7 @@ import (
 type MessagingService struct {
 	Log                 *logrus.Logger
 	Consumer            sarama.Consumer
-	Notifier			INotifier
+	Notifier			INotifier 
 }
 
 func NewMessagingService(log *logrus.Logger, consumer sarama.Consumer) *MessagingService {

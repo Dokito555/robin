@@ -47,7 +47,6 @@ func NewDatabase(viper *viper.Viper, log *logrus.Logger) *gorm.DB {
 
 	err = db.AutoMigrate(
 		&entity.User{},
-		&entity.Artist{},
 	)
 	if err != nil {
 		log.Fatalf("failed to auto-migrate: %v", err)

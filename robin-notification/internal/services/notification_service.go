@@ -148,7 +148,8 @@ func NewNotificationService(db *gorm.DB, log *logrus.Logger, config *viper.Viper
 // }
 
 func (s *NotificationService) SendEmail(ctx context.Context, req *model.InternalNotificationRequest) error {
-	s.Log.Info("Starting SendEmail function")
+	s.Log.Info("starting Send Email function")
+	s.Log.Infof("request received: %+v", req)
 	
 	body := fmt.Sprintf("Hello %v, your role is %v", req.Placeholder["username"], req.Placeholder["role"])
 	newEmail := &entity.Email{

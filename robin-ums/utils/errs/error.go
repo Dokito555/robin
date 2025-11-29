@@ -7,6 +7,7 @@ import (
 type AppError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+	Data    any    `json:"data"`
 }
 
 func (e *AppError) Error() string {
@@ -23,9 +24,9 @@ var (
 )
 
 type ErrorResponse struct {
-	Success bool           `json:"success"`
-	Data    interface{}    `json:"data,omitempty"`
-	Error   *AppError `json:"error,omitempty"`
+	Success bool        `json:"success"`
+	Data    interface{} `json:"data,omitempty"`
+	Error   *AppError   `json:"error,omitempty"`
 }
 
 func NewError(code int, message string) *AppError {

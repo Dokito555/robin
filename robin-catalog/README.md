@@ -1,0 +1,1 @@
+combine artist, songs, and albums into this service

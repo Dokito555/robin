@@ -2,12 +2,10 @@
 learning purposes
 
 todo:
-- too much boilerplate
-- complete all services
-- RPI & relationships
-- kafka
-- logger
-- monitor
-- deployment
-
-- Register -> Kafka (User Registered Topic) -> Notification Service -> Email Service
+- too much boilerplate      half done
+- complete all services     80%
+- RPI & relationships       75%
+- kafka                     done
+- logger                    done
+- monitor               
+- deployment                init
