@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"os"
 	"time"
 
 	"github.com/Dokito555/robin/robin-catalog/internal/entity"
@@ -14,15 +17,17 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/tcolgate/mp3"
 	"gorm.io/gorm"
 )
 
 type SongService struct {
-	Log            *logrus.Logger
-	DB             *gorm.DB
-	Validate       *validator.Validate
-	Viper          *viper.Viper
-	SongRepository *repository.SongRepository
+	Log             *logrus.Logger
+	DB              *gorm.DB
+	Validate        *validator.Validate
+	Viper           *viper.Viper
+	SongRepository  *repository.SongRepository
+	AlbumRepository *repository.AlbumRepository
 }
 
 func NewSongService(log *logrus.Logger, db *gorm.DB, validate *validator.Validate, viper *viper.Viper, repo *repository.SongRepository) *SongService {
@@ -33,6 +38,26 @@ func NewSongService(log *logrus.Logger, db *gorm.DB, validate *validator.Validat
 		Viper:          viper,
 		SongRepository: repo,
 	}
+}
+
+func (s *SongService) CalculateMP3Duration(file multipart.File) (time.Duration, error) {
+	var duration time.Duration
+	decoder := mp3.NewDecoder(file)
+	var frame mp3.Frame
+	skipped := 0
+
+	for {
+		err := decoder.Decode(&frame, &skipped)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return 0, fmt.Errorf("error decoding MP3 frame: %w", err)
+		}
+		duration += frame.Duration()
+	}
+
+	return duration, nil
 }
 
 func (s *SongService) CreateNewSong(ctx context.Context, req *model.CreateSongRequest, fileReq *model.UploadFileRequest) (*model.SongResponse, error) {
@@ -48,25 +73,61 @@ func (s *SongService) CreateNewSong(ctx context.Context, req *model.CreateSongRe
 		return nil, errs.ERROR_BAD_REQUEST
 	}
 
-	// call upload file to s3 and return link
-	fileName := fmt.Sprintf("uploads/%d-%s", time.Now().Unix(), fileReq.FileHeader.Filename)
-	file := &model.File{
-		File:     fileReq.File,
-		FileName: fileName,
+	album := new(entity.Album)
+	if err := s.AlbumRepository.FindById(s.DB, album, req.AlbumID); err != nil {
+    return nil, errs.ERROR_NOT_FOUND
 	}
 
-	url, err := s.SongRepository.UploadFileToS3(viper.GetString("AWS_SONG_BUCKET"), file)
+	if album.ArtistID != req.ArtistID {
+		return nil, errs.ERROR_FORBIDDEN
+	}
+
+	fileName := fmt.Sprintf("songs/%d-%s", time.Now().Unix(), fileReq.FileHeader.Filename)
+
+	tempFilePath := fmt.Sprintf("/tmp/%s", fileReq.FileHeader.Filename)
+	// tight coupling
+	// err = ctx.Value("ginCotext").(*gin.Context).SaveUploadedFile(fileReq.FileHeader, tempFilePath)
+	// if err != nil {
+	// 	s.Log.Warnf("failed to save temp file: %v", err)
+	// 	return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	// }
+	// defer os.Remove(tempFilePath)
+
+	// chance of messing up file streams
+	out, err := os.Create(tempFilePath)
 	if err != nil {
-		s.Log.Println(viper.GetString("AWS_SONG_BUCKET"))
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
+	defer out.Close()
+	defer os.Remove(tempFilePath)
+
+	if _, err := io.Copy(out, fileReq.File); err != nil {
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	objectName, err := s.SongRepository.UploadFileToMinio(tempFilePath, fileName)
+	if err != nil {
+		s.Log.Warnf("failed to upload file to MinIO: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	// file := &model.File{
+	// 	File:     fileReq.File,
+	// 	FileName: fileName,
+	// }
+
+	// url, err := s.SongRepository.UploadFileToS3(viper.GetString("AWS_SONG_BUCKET"), file)
+	// if err != nil {
+	// 	s.Log.Println(viper.GetString("AWS_SONG_BUCKET"))
+	// 	return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	// }
 	// TODO: check if current user already have song
 
 	newSong := &entity.Song{
 		ArtistID: req.ArtistID,
 		AlbumID:  req.AlbumID,
 		Name:     req.Name,
-		Link:     url,
+		Link:     objectName,
 		Duration: req.Duration,
 	}
 
@@ -87,8 +148,24 @@ func (s *SongService) GetSong(ctx context.Context, req *model.GetSongRequest) (*
 	s.Log.Info("starting Get Song Function")
 	s.Log.Infof("request received: %+v", req)
 
-	tx := s.DB.WithContext(ctx).Begin()
-	defer tx.Rollback()
+	err := s.Validate.Struct(req)
+	if err != nil {
+		s.Log.Warnf("invalid request body: %+v", err)
+		return nil, errs.ERROR_BAD_REQUEST
+	}
+
+	song := new(entity.Song)
+	if err := s.SongRepository.FindById(s.DB, song, req.ID); err != nil {
+		s.Log.Warnf("failed to get song in database: %+v", err)
+		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	}
+
+	return converter.SongToResponse(song), nil
+}
+
+func (s *SongService) GetSongStream(ctx context.Context, req *model.GetSongRequest) (*model.SongStreamResponse, error) {
+	s.Log.Info("starting Get Song Stream URL Function")
+	s.Log.Infof("request received: %+v", req)
 
 	err := s.Validate.Struct(req)
 	if err != nil {
@@ -102,12 +179,18 @@ func (s *SongService) GetSong(ctx context.Context, req *model.GetSongRequest) (*
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		s.Log.Warnf("failed to commit transaction: %+v", err)
+	streamURL, err := s.SongRepository.RetrieveFileFromMinio(song.Link)
+	if err != nil {
+		s.Log.Warnf("failed to generate presigned URL from MinIO: %+v", err)
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	return converter.SongToResponse(song), nil
+	return &model.SongStreamResponse{
+		SongID:    song.ID,
+		Name:      song.Name,
+		StreamURL: streamURL.String(),
+		Duration:  song.Duration,
+	}, nil
 }
 
 func (s *SongService) UpdateSong(ctx context.Context, req *model.UpdateSongRequest) (*model.SongResponse, error) {

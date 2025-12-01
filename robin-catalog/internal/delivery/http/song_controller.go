@@ -1,11 +1,9 @@
 package http
 
 import (
-	"io"
 	"net/http"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/Dokito555/robin/robin-catalog/internal/delivery/http/middleware"
 	"github.com/Dokito555/robin/robin-catalog/internal/model"
@@ -14,7 +12,6 @@ import (
 	"github.com/Dokito555/robin/robin-catalog/utils/errs"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/tcolgate/mp3"
 )
 
 type SongController struct {
@@ -31,17 +28,15 @@ func NewSongController(log *logrus.Logger, service *services.SongService) *SongC
 
 func (c *SongController) CreateSong(ctx *gin.Context) {
 	auth := middleware.GetProfile(ctx)
-	name := ctx.PostForm("name")
-	file, err := ctx.FormFile("file")
-
-	if err != nil {
-		c.Log.Warnf("file not found: %+v", err)
-		ctx.JSON(http.StatusBadRequest, errs.ERROR_BAD_REQUEST)
+	if auth.Role != constants.ROLE_ARTIST {
+		c.Log.Warnf("unauthorized: user role is %s", auth.Role)
+		ctx.JSON(http.StatusUnauthorized, errs.ERROR_UNAUTHORIZED)
 		return
 	}
 
-	if filepath.Ext(file.Filename) != ".mp3" {
-		c.Log.Warnf("invalid file type: %s", file.Filename)
+	name := ctx.PostForm("name")
+	if name == "" {
+		c.Log.Warn("song name is required")
 		ctx.JSON(http.StatusBadRequest, errs.ERROR_BAD_REQUEST)
 		return
 	}
@@ -53,16 +48,52 @@ func (c *SongController) CreateSong(ctx *gin.Context) {
 		return
 	}
 
-	if auth.Role != constants.ROLE_ARTIST {
-		c.Log.Warnf("unauthorized: user role is %s", auth.Role)
-		ctx.JSON(http.StatusUnauthorized, errs.ERROR_UNAUTHORIZED)
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		c.Log.Warnf("file not found: %+v", err)
+		ctx.JSON(http.StatusBadRequest, errs.ERROR_BAD_REQUEST)
 		return
 	}
 
-	// TODO: ensure this is the correct implementation
+	if filepath.Ext(file.Filename) != ".mp3" {
+		c.Log.Warnf("invalid file type: %s", file.Filename)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "only MP3 files are allowed"})
+		return
+	}
+
+	// max size 50mb
+	const maxFileSize = 50 * 1024 * 1024
+	if file.Size > maxFileSize {
+		c.Log.Warnf("file too large: %d bytes", file.Size)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeds 50MB limit"})
+		return
+	}
+
 	uploadedFile, err := file.Open()
 	if err != nil {
 		c.Log.Warnf("failed to open file: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, errs.ERROR_INTERNAL_SERVER_ERROR)
+		return
+	}
+	defer uploadedFile.Close()
+
+	duration, err := c.SongService.CalculateMP3Duration(uploadedFile)
+	if err != nil {
+		c.Log.Warnf("failed to calculate MP3 duration: %+v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid MP3 file"})
+		return
+	}
+
+	if duration == 0 {
+		c.Log.Warn("MP3 duration is zero")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid MP3 file or empty audio"})
+		return
+	}
+
+	uploadedFile.Close()
+	uploadedFile, err = file.Open()
+	if err != nil {
+		c.Log.Warnf("failed to reopen file: %+v", err)
 		ctx.JSON(http.StatusInternalServerError, errs.ERROR_INTERNAL_SERVER_ERROR)
 		return
 	}
@@ -73,33 +104,10 @@ func (c *SongController) CreateSong(ctx *gin.Context) {
 		FileHeader: file,
 	}
 
-	// get mp3 file duration
-	// sus implementation (im really not sure about this)
-	// look deeper into this
-	var duration time.Duration
-	decoder := mp3.NewDecoder(uploadedFile)
-	var frame mp3.Frame
-	skipped := 0
-
-	for {
-		if err := decoder.Decode(&frame, &skipped); err != nil {
-			if err == io.EOF {
-				break
-			}
-			c.Log.Warnf("error decoding MP3 frame: %+v", err)
-			break
-		}
-		duration += frame.Duration()
-	}
-
-	// reset file pointer to beginning for later use
-	uploadedFile.Seek(0, 0)
-
 	req := &model.CreateSongRequest{
 		Name:     name,
 		AlbumID:  albumId,
 		ArtistID: auth.UserID,
-		// not sure :/
 		Duration: int(duration.Milliseconds()),
 	}
 
@@ -119,28 +127,21 @@ func (c *SongController) CreateSong(ctx *gin.Context) {
 
 func (c *SongController) GetSong(ctx *gin.Context) {
 	req := new(model.GetSongRequest)
-	err := ctx.ShouldBindJSON(&req)
-	if err != nil {
-		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, errs.ERROR_BAD_REQUEST)
-		return
-	}
-
-	IdStr := ctx.Param("id")
-	if IdStr == "" {
+	idStr := ctx.Param("id")
+	if idStr == "" {
 		c.Log.Warnf("id is empty")
 		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
-	Id, err := strconv.Atoi(IdStr)
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.Log.Warnf("failed to convert id string to int")
-		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
+		ctx.JSON(http.StatusInternalServerError, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
 		return
 	}
 
-	req.ID = Id
+	req.ID = id
 
 	rsp, err := c.SongService.GetSong(ctx.Request.Context(), req)
 	if err != nil {
@@ -154,6 +155,39 @@ func (c *SongController) GetSong(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.SongResponse]{Message: http.StatusOK, Data: rsp})
+}
+
+func (c *SongController) GetSongStream(ctx *gin.Context) {
+	req := new(model.GetSongRequest)
+	idStr := ctx.Param("id")
+
+	if idStr == "" {
+		c.Log.Warn("id is empty")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.Log.Warnf("failed to convert id string to int")
+		ctx.JSON(http.StatusInternalServerError, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
+		return
+	}
+
+	req.ID = id
+
+	rsp, err := c.SongService.GetSongStream(ctx, req)
+	if err != nil {
+		c.Log.Warnf("failed to get song stream: %v", err)
+		appErr, ok := err.(*errs.AppError)
+		if !ok {
+			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
+		}
+		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model.BaseResponse[*model.SongStreamResponse]{Message: http.StatusOK, Data: rsp})
 }
 
 func (c *SongController) UpdateSong(ctx *gin.Context) {

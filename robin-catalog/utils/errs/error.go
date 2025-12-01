@@ -20,6 +20,7 @@ var (
 	ERROR_UNAUTHORIZED          = &AppError{Code: http.StatusUnauthorized, Message: "Unauthorized"}
 	ERROR_USER_EXIST            = &AppError{Code: http.StatusConflict, Message: "User already exists"}
 	ERROR_INVALID_CREDENTIALS   = &AppError{Code: http.StatusBadRequest, Message: "Invalid credentials"}
+	ERROR_FORBIDDEN  			= &AppError{Code: http.StatusForbidden, Message: "Forbidden"}
 )
 
 type ErrorResponse struct {

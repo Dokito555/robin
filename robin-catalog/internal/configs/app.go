@@ -1,4 +1,4 @@
-package config
+package configs
 
 import (
 	"github.com/Dokito555/robin/robin-catalog/internal/delivery/grpc"
@@ -9,17 +9,19 @@ import (
 	"github.com/Dokito555/robin/robin-catalog/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
 type BootstrapConfig struct {
-	DB       *gorm.DB
-	App      *gin.Engine
-	Log      *logrus.Logger
-	Validate *validator.Validate
-	Config   *viper.Viper
+	DB          *gorm.DB
+	App         *gin.Engine
+	Log         *logrus.Logger
+	Validate    *validator.Validate
+	Config      *viper.Viper
+	MinioClient *minio.Client
 }
 
 func Bootstrap(config *BootstrapConfig) {
@@ -52,7 +54,7 @@ func Bootstrap(config *BootstrapConfig) {
 		ArtistController: artistController,
 		AlbumController:  albumController,
 		// SongController:   songController,
-		AuthMiddleware:   middleeware,
+		AuthMiddleware: middleeware,
 	}
 
 	grpcConfig := grpc.GrpcConfig{

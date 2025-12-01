@@ -2,13 +2,13 @@ package main
 
 import config "github.com/Dokito555/robin/robin-catalog/internal/configs"
 
-
 func main() {
 	// init configs
 	viperConfig := config.NewViper()
 	log := config.NewLogger(viperConfig)
 	db := config.NewDatabase(viperConfig, log)
 	validate := config.NewValidator(viperConfig)
+	minioClient := config.NewMinioClient(viperConfig, log)
 	app := config.NewGin(viperConfig)
 	// TODO: switch to minio
 	// s3 := config.NewS3Client(viperConfig, log)
@@ -16,11 +16,12 @@ func main() {
 
 	// inject configs to app
 	config.Bootstrap(&config.BootstrapConfig{
-		DB:       db,
-		App:      app,
-		Log:      log,
-		Validate: validate,
-		Config:   viperConfig,
+		DB:          db,
+		App:         app,
+		Log:         log,
+		Validate:    validate,
+		Config:      viperConfig,
+		MinioClient: minioClient,
 		// S3Client: s3,
 	})
 

@@ -52,4 +52,11 @@ type (
 		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}
+
+	SongStreamResponse struct {
+		SongID    int    `json:"song_id"`
+		Name      string `json:"name"`
+		StreamURL string `json:"stream_url"`
+		Duration  int    `json:"duration"`
+	}
 )
