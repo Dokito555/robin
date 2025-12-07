@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"encoding/json"
+	// "encoding/json"
 	"errors"
 	"net/http"
 
@@ -12,7 +12,7 @@ import (
 	"github.com/Dokito555/robin-ums/internal/repository"
 	"github.com/Dokito555/robin-ums/utils/constants"
 	"github.com/Dokito555/robin-ums/utils/errs"
-	"github.com/IBM/sarama"
+	// "github.com/IBM/sarama"
 	"github.com/go-playground/validator"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -24,24 +24,24 @@ type UserService struct {
 	DB             *gorm.DB
 	Log            *logrus.Logger
 	Validate       *validator.Validate
-	Producer       sarama.SyncProducer
+	// Producer       sarama.SyncProducer
 	Config         *viper.Viper
 	UserRepository *repository.UserRepository
 	TokenService   *TokenService
-	Messaging      *MessagingService
+	// Messaging      *MessagingService
 }
 
-func NewUserService(db *gorm.DB, logger *logrus.Logger, config *viper.Viper, validate *validator.Validate, producer sarama.SyncProducer,
-	userRepository *repository.UserRepository, tokenSvc *TokenService, Messaging *MessagingService) *UserService {
+func NewUserService(db *gorm.DB, logger *logrus.Logger, config *viper.Viper, validate *validator.Validate,
+	userRepository *repository.UserRepository, tokenSvc *TokenService) *UserService {
 	return &UserService{
 		DB:             db,
 		Log:            logger,
 		Validate:       validate,
-		Producer:       producer,
+		// Producer:       producer,
 		Config:         config,
 		UserRepository: userRepository,
 		TokenService:   tokenSvc,
-		Messaging:      Messaging,
+		// Messaging:      Messaging,
 	}
 }
 
@@ -96,26 +96,26 @@ func (s *UserService) Register(ctx context.Context, req *model.RegisterUserReque
 		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
 	}
 
-	kafkaPayload := model.RegisterPayload{
-		UserName: req.Username,
-		Role:     req.Role,
-	}
+	// kafkaPayload := model.RegisterPayload{
+	// 	UserName: req.Username,
+	// 	Role:     req.Role,
+	// }
 
-	jsonPayload, err := json.Marshal(kafkaPayload)
-	if err != nil {
-		// TODO: honestly sending email is optional for registration
-		// might seperate this later
-		s.Log.Warn("failed to marshal kafka payload")
-		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
-	}
+	// jsonPayload, err := json.Marshal(kafkaPayload)
+	// if err != nil {
+	// 	// TODO: honestly sending email is optional for registration
+	// 	// might seperate this later
+	// 	s.Log.Warn("failed to marshal kafka payload")
+	// 	return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	// }
 
-	err = s.Messaging.ProduceKafkaMessage(s.Config.GetString("KAFKA_REGISTER_TOPIC"), jsonPayload)
-	if err != nil {
-		// TODO: if kafka failed the registration system also failed
-		// error should be optional?
-		s.Log.Warn("failed from kafka")
-		return nil, errs.ERROR_INTERNAL_SERVER_ERROR
-	}
+	// err = s.Messaging.ProduceKafkaMessage(s.Config.GetString("KAFKA_REGISTER_TOPIC"), jsonPayload)
+	// if err != nil {
+	// 	// TODO: if kafka failed the registration system also failed
+	// 	// error should be optional?
+	// 	s.Log.Fatalf("failed from kafka")
+	// 	return nil, errs.ERROR_INTERNAL_SERVER_ERROR
+	// }
 
 	return converter.UserToResponse(user), nil
 }

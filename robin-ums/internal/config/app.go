@@ -8,7 +8,7 @@ import (
 	"github.com/Dokito555/robin-ums/internal/repository"
 	"github.com/Dokito555/robin-ums/internal/services"
 	"github.com/Dokito555/robin-ums/utils/constants"
-	"github.com/IBM/sarama"
+	// "github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
 	"github.com/sirupsen/logrus"
@@ -22,7 +22,7 @@ type BootstrapConfig struct {
 	Log           *logrus.Logger
 	Validate      *validator.Validate
 	Config        *viper.Viper
-	KafkaProducer sarama.SyncProducer
+	// KafkaProducer sarama.SyncProducer
 }
 
 func Bootstrap(config *BootstrapConfig) {
@@ -30,9 +30,11 @@ func Bootstrap(config *BootstrapConfig) {
 	userRepository := repository.NewUserRepository(config.Log, config.DB)
 	
 	// setup services
-	messagingService := services.NewMessagingService(config.Log, config.KafkaProducer)
+	// messagingService := services.NewMessagingService(config.Log, config.KafkaProducer)
+	// messagingService := services.NewMessagingService(config.Log)
 	tokenService := services.NewTokenService(config.Log, config.Config)
-	userService := services.NewUserService(config.DB, config.Log, config.Config, config.Validate, config.KafkaProducer, userRepository, tokenService, messagingService)
+	// userService := services.NewUserService(config.DB, config.Log, config.Config, config.Validate, config.KafkaProducer, userRepository, tokenService, messagingService)
+	userService := services.NewUserService(config.DB, config.Log, config.Config, config.Validate, userRepository, tokenService)
 
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)

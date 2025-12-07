@@ -10,7 +10,7 @@ type RouteConfig struct {
 	HealthController *http.HealthController
 	ArtistController *http.ArtistController
 	AlbumController  *http.AlbumController
-	// SongController   *http.SongController
+	SongController   *http.SongController
 	AuthMiddleware   gin.HandlerFunc
 }
 
@@ -31,6 +31,10 @@ func (c *RouteConfig) SetupGuestRoute() {
 	// Album
 	c.App.GET("/api/v1/album/:id", c.AlbumController.GetAlbum)
 	c.App.GET("/api/v1/album/artist/:id", c.AlbumController.GetAlbumListByArtistID)
+
+	// Song
+	c.App.GET("/api/v1/song/:id", c.SongController.GetSong)               
+	c.App.GET("/api/v1/song/:id/stream", c.SongController.GetSongStream) 
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
@@ -49,5 +53,15 @@ func (c *RouteConfig) SetupAuthRoute() {
 		albumGroup.POST("", c.AlbumController.CreateAlbum)
 		albumGroup.PUT("/:id", c.AlbumController.UpdateAlbum)
 		albumGroup.DELETE("/:id", c.AlbumController.DeleteAlbum)
+		albumGroup.POST("/:id/song", c.SongController.CreateSong)
+		albumGroup.DELETE("/:id/song", c.SongController.DeleteSong)
+	}
+
+	// Song
+	songGroup := c.App.Group("/api/v1/song")
+	songGroup.Use(c.AuthMiddleware)
+	{
+		// c.App.POST("/", c.SongController.CreateSong)
+		songGroup.DELETE("/:id", c.SongController.DeleteSong)
 	}
 }

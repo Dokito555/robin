@@ -9,8 +9,11 @@ func main() {
 	db := config.NewDatabase(viperConfig, log)
 	validate := config.NewValidator(viperConfig)
 	app := config.NewGin(viperConfig)
-	kafkaProducer, err := config.NewKafkaProducer(viperConfig, log)
-	defer kafkaProducer.Close()
+	// kafkaProducer, err := config.NewKafkaProducer(viperConfig, log)
+	// if err != nil {
+	// 	log.Fatalf("Failed to create Kafka producer: %v", err)
+	// }
+	// defer kafkaProducer.Close()
 	// should be grpc
 
 	// inject configs to app
@@ -20,12 +23,12 @@ func main() {
 		Log:           log,
 		Validate:      validate,
 		Config:        viperConfig,
-		KafkaProducer: kafkaProducer,
+		// KafkaProducer: kafkaProducer,
 	})
 
 	// run app
 	port := viperConfig.GetString("APP_PORT")
-	err = app.Run(":" + port)
+	err := app.Run(":" + port)
 	log.Info("Listening to port: " + port)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)

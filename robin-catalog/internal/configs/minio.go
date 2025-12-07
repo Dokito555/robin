@@ -12,22 +12,25 @@ import (
 func NewMinioClient(viper *viper.Viper, log *logrus.Logger) *minio.Client {
 	minioClient, err := minio.New(viper.GetString("MINIO_ENDPOINT"), &minio.Options{
 		Creds:  credentials.NewStaticV4(viper.GetString("MINIO_ACCESS_KEY_ID"), viper.GetString("MINIO_SECRET_ACCESS_KEY"), ""),
-		Secure: true,
+		Secure: false, 
 	})
 
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	err = minioClient.MakeBucket(context.Background(), viper.GetString("MINIO_BUCKET_NAME"), minio.MakeBucketOptions{})
+	bucketName := viper.GetString("MINIO_BUCKET_NAME")
+	err = minioClient.MakeBucket(context.Background(), bucketName, minio.MakeBucketOptions{})
 
 	if err != nil {
-		exists, errBucketExists := minioClient.BucketExists(context.Background(), viper.GetString("MINIO_BUCKET"))
-		if errBucketExists != nil && exists {
-			log.Printf("We already own %s\n", viper.GetString("MINIO_BUCKET_NAME"))
+		exists, errBucketExists := minioClient.BucketExists(context.Background(), bucketName)
+		if errBucketExists == nil && exists {
+			log.Printf("Bucket %s already exists\n", bucketName)
 		} else {
 			log.Fatalln(err)
 		}
+	} else {
+		log.Infof("MinIO bucket '%s' created successfully", bucketName)
 	}
 	
 	log.Info("MINIO BUCKET CREATED")

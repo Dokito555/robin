@@ -28,20 +28,20 @@ func Bootstrap(config *BootstrapConfig) {
 	// setup repo
 	artistRepo := repository.NewAristRepository(config.Log, config.DB)
 	albumRepo := repository.NewAlbumRepository(config.Log, config.DB)
-	// songRepository := repository.NewSongRepository(config.Log, config.DB)
+	songRepo := repository.NewSongRepository(config.Log, config.DB, config.MinioClient, config.Config)
 
 	// setup services
 	tokenService := services.NewTokenService(config.Log, config.Config)
 	artistService := services.NewArtistService(config.DB, config.Log, config.Validate, artistRepo, tokenService)
 	albumService := services.NewAlbumService(config.DB, config.Log, config.Validate, albumRepo)
 	// artistPkg := artist.NewArtist(config.Log, config.Config)
-	// songService := services.NewSongService(config.Log, config.DB, config.Validate, config.Config, songRepository)
+	songService := services.NewSongService(config.Log, config.DB, config.Validate, config.Config, songRepo, albumRepo)
 
 	// setup controllers
 	healthController := http.NewHealthController(config.Log)
 	artistController := http.NewArtistController(config.Log, artistService)
 	albumController := http.NewAlbumService(config.Log, albumService)
-	// songController := http.NewSongController(config.Log, songService)
+	songController := http.NewSongController(config.Log, songService)
 	tokenValidationController := grpc.NewTokenValidationController(tokenService, config.Log)
 
 	// setup middleware
@@ -53,7 +53,7 @@ func Bootstrap(config *BootstrapConfig) {
 		HealthController: healthController,
 		ArtistController: artistController,
 		AlbumController:  albumController,
-		// SongController:   songController,
+		SongController:   songController,
 		AuthMiddleware: middleeware,
 	}
 

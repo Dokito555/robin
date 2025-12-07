@@ -45,12 +45,28 @@ func NewDatabase(viper *viper.Viper, log *logrus.Logger) *gorm.DB {
 		os.Exit(1)
 	}
 
-	if err := db.AutoMigrate(
+	log.Info("Starting database migration...")
+
+	tables := []interface{}{
 		&entity.Artist{},
-	); err != nil {
-		log.Fatalf("failed to auto-migrate: %v", err)
-		os.Exit(1)
+		&entity.Album{},
+		&entity.Song{},
 	}
+
+	for _, table := range tables {
+		log.Info("starting to migrate: %T", table)
+		if err := db.AutoMigrate(table); err != nil {
+			log.Fatalf("failed to migrate %T: %v", table, err)
+			os.Exit(1)
+		}
+		log.Infof("Successfully migrated: %T", table)
+	}
+
+	log.Info("Database migration completed!")
+
+	log.Infof("artists exists? %v", db.Migrator().HasTable(&entity.Artist{}))
+	log.Infof("albums exists?  %v", db.Migrator().HasTable(&entity.Album{}))
+	log.Infof("songs exists?   %v", db.Migrator().HasTable(&entity.Song{}))
 	
 	return db
 }

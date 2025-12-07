@@ -190,59 +190,14 @@ func (c *SongController) GetSongStream(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, model.BaseResponse[*model.SongStreamResponse]{Message: http.StatusOK, Data: rsp})
 }
 
-func (c *SongController) UpdateSong(ctx *gin.Context) {
-	auth := middleware.GetProfile(ctx)
-	req := new(model.UpdateSongRequest)
-	err := ctx.ShouldBindJSON(&req)
-	if err != nil {
-		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, errs.ERROR_BAD_REQUEST)
-		return
-	}
-
-	IdStr := ctx.Param("id")
-	if IdStr == "" {
-		c.Log.Warnf("id is empty")
-		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
-		return
-	}
-
-	Id, err := strconv.Atoi(IdStr)
-	if err != nil {
-		c.Log.Warnf("failed to convert id string to int")
-		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_INTERNAL_SERVER_ERROR))
-		return
-	}
-
-	req.ID = Id
-
-	if auth.Role != constants.ROLE_ARTIST && auth.Role != constants.ROLE_ADMIN {
-		c.Log.Warnf("auth role is not artist or admin")
-		ctx.JSON(http.StatusBadRequest, errs.ERROR_UNAUTHORIZED)
-		return
-	}
-
-	rsp, err := c.SongService.UpdateSong(ctx.Request.Context(), req)
-	if err != nil {
-		c.Log.Warnf("failed to update song: %+v", err)
-		appErr, ok := err.(*errs.AppError)
-		if !ok {
-			appErr = errs.ERROR_INTERNAL_SERVER_ERROR
-		}
-		ctx.JSON(appErr.Code, errs.NewErrorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, model.BaseResponse[*model.SongResponse]{Message: http.StatusOK, Data: rsp})
-}
-
 func (c *SongController) DeleteSong(ctx *gin.Context) {
 	auth := middleware.GetProfile(ctx)
 	req := new(model.DeleteSongRequest)
-	err := ctx.ShouldBindJSON(&req)
-	if err != nil {
-		c.Log.Warnf("failed to bind request to JSON: %+v", err)
-		ctx.JSON(http.StatusBadRequest, errs.ERROR_BAD_REQUEST)
+	idStr := ctx.Param("id")
+
+	if idStr == "" {
+		c.Log.Warn("id is empty")
+		ctx.JSON(http.StatusBadRequest, errs.NewErrorResponse(errs.ERROR_BAD_REQUEST))
 		return
 	}
 
