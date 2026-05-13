@@ -154,6 +154,11 @@ func (db *DB) GetTracksByFolder(folderID int64) ([]Track, error) {
 	)
 }
 
+func (db *DB) DeleteTrackByPath(path string) error {
+	_, err := db.Conn.Exec(`DELETE FROM tracks WHERE path = ?`, path)
+	return err
+}
+
 func (db *DB) queryTracks(query string, args ...any) ([]Track, error) {
 	rows, err := db.Conn.Query(query, args...)
 	if err != nil {
