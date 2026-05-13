@@ -73,14 +73,17 @@ func (db *DB) migrate() error {
 }
 
 func (db *DB) InsertFolder(path, folderType string) (int64, error) {
-	res, err := db.Conn.Exec(
-		`INSERT INTO folders (path, type) VALUES (?, ?) ON CONFLICT(path) DO NOTHING`,
-		path, folderType,
-	)
+	var id int64
+	err := db.Conn.QueryRow(`
+		INSERT INTO folders (path, type)
+		VALUES (?, ?)
+		ON CONFLICT(path) DO UPDATE SET type = excluded.type
+		RETURNING id
+	`, path, folderType).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("insert folder: %w", err)
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func (db *DB) GetFolders() ([]Folder, error) {
