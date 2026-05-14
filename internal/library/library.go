@@ -17,7 +17,7 @@ type Library struct {
 }
 
 // TODO: support massive libraries
-func New(db *storage.DB, covers *CoverCache, bus *events.Bus) (*Library, error) {
+func NewLibrary(db *storage.DB, covers *CoverCache, bus *events.Bus) (*Library, error) {
 	imp := NewImporter(db, covers, bus)
 
 	watcher, err := NewWatcher(db, imp, bus)
