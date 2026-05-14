@@ -16,6 +16,7 @@ type Library struct {
 	bus     *events.Bus
 }
 
+// TODO: support massive libraries
 func New(db *storage.DB, covers *CoverCache, bus *events.Bus) (*Library, error) {
 	imp := NewImporter(db, covers, bus)
 

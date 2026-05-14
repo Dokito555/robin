@@ -11,6 +11,7 @@ type DB struct {
 	Conn *sql.DB
 }
 
+// TODO: check for cache invalidation
 func Open(dsn string) (*DB, error) {
 	conn, err := sql.Open("sqlite", dsn+"?_journal_mode=WAL&_foreign_keys=on")
 	if err != nil {

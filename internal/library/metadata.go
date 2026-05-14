@@ -20,6 +20,7 @@ type TrackMeta struct {
 	CoverData []byte
 }
 
+// TODO: check for corrupted metadata
 func ReadMeta(path string) (TrackMeta, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 
