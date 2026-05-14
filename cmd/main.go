@@ -60,11 +60,11 @@ func main() {
 
 	bus.Subscribe(events.TrackStarted, func(e events.Event) {
 		pay := e.Payload.(events.TrackStartedPayload)
-		fmt.Printf("▶  now playing: %s — %s\n", pay.Artist, pay.Title)
+		fmt.Printf("now playing: %s — %s\n", pay.Artist, pay.Title)
 	})
 
 	bus.Subscribe(events.TrackEnded, func(e events.Event) {
-		fmt.Println("⏭  track ended — advancing queue")
+		fmt.Println("track ended — advancing queue")
 	})
 
 	// load library into queue and play
