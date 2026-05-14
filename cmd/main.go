@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Dokito555/robin/internal/events"
@@ -10,10 +11,23 @@ import (
 )
 
 func main() {
-	db, _ := storage.Open("./dev.db")
+	db, err := storage.Open("robin.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	bus := events.NewBus()
-	cache, _ := library.NewCoverCache("./cache/covers")
-	lib, _ := library.New(db, cache, bus)
+
+	cache, err := library.NewCoverCache("./cache/covers")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	lib, err := library.New(db, cache, bus)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	defer lib.Close()
 
 	bus.Subscribe(events.ScanDone, func(e events.Event) {
@@ -31,7 +45,7 @@ func main() {
 		fmt.Printf("live: new file detected %s\n", p.Path)
 	})
 
-	lib.AddFolder("C:/Users/Zwacht/OneDrive/Documents/friendsure/music", "local")
+	lib.AddFolder("E:/Music", "local")
 
 	// drop a new mp3 into the folder while this runs — watcher should pick it up
 	time.Sleep(60 * time.Second)

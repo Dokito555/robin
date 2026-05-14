@@ -91,7 +91,7 @@ func sanitize(m TrackMeta) TrackMeta {
 		m.Artist = "Unknown Artist"
 	}
 	if m.Album == "" {
-		m.Album = "Unkown Album"
+		m.Album = "Unknown Album"
 	}
 
 	if m.CoverData == nil {

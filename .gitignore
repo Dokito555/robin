@@ -4,3 +4,4 @@
 .dev.db-wal
 .dev.db-shm
 .dev.db
+.robin.db
