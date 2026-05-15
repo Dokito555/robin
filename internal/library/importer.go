@@ -63,6 +63,7 @@ func (imp *Importer) Import(folderID int64, rootPath string) {
 
 				if err := imp.importOne(folderID, p); err != nil {
 					log.Printf("importer: skip %s: %v", p, err)
+					imp.db.LogScanError(path, err.Error())
 					return
 				}
 
@@ -98,6 +99,10 @@ func (imp *Importer) importOne(folderID int64, path string) error {
 	meta, err := ReadMeta(path)
 	if err != nil {
 		return fmt.Errorf("read meta: %w", err)
+	}
+
+	if err := meta.validate(); err != nil {
+		return fmt.Errorf("invalid metadata: %w", err)
 	}
 
 	coverPath, err := imp.covers.Save(meta.CoverData)

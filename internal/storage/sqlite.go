@@ -67,6 +67,13 @@ func (db *DB) migrate() error {
 		track_id    INTEGER NOT NULL REFERENCES tracks(id)    ON DELETE CASCADE,
 		position    INTEGER NOT NULL,
 		PRIMARY KEY (playlist_id, track_id)
+	);
+	
+	CREATE TABLE IF NOT EXISTS scan_errors (
+		id         INTEGER PRIMARY KEY AUTOINCREMENT,
+		path       TEXT NOT NULL,
+		error      TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 
 	_, err := db.Conn.Exec(schema)
@@ -232,4 +239,13 @@ func (db *DB) GetPlaylistTracks(playlistID int64) ([]Track, error) {
 func (db *DB) DeletePlaylist(id int64) error {
 	_, err := db.Conn.Exec(`DELETE FROM playlists WHERE id = ?`, id)
 	return err
+}
+
+func (db *DB) LogScanError(path, errMsg string) error {
+    _, err := db.Conn.Exec(
+        `INSERT INTO scan_errors (path, error) VALUES (?, ?)
+         ON CONFLICT DO NOTHING`,
+        path, errMsg,
+    )
+    return err
 }

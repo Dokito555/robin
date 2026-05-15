@@ -35,6 +35,15 @@ func ReadMeta(path string) (TrackMeta, error) {
 	}
 }
 
+func ReadMetaSafe(path string) (meta TrackMeta, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic reading tags from %s: %v", path, err)
+		}
+	}()
+	return ReadMeta(path)
+}
+
 func readMP3(path string) (TrackMeta, error) {
 	tag, err := id3v2.Open(path, id3v2.Options{Parse: true})
 	if err != nil {
@@ -128,4 +137,25 @@ func estimateDuration(path string) time.Duration {
 	const avgBitsPerSec = 128_000
 	secs := float64(info.Size()*8) / float64(avgBitsPerSec)
 	return time.Duration(secs) * time.Second
+}
+
+func (m TrackMeta) validate() error {
+	if m.Path == "" {
+		return fmt.Errorf("empty path")
+	}
+
+	if m.Title == "" {
+		return fmt.Errorf("could not determine title for %s", m.Path)
+	}
+
+	// large duration might be corrupted
+	if m.Duration > 24*time.Hour {
+		m.Duration = 0
+	}
+
+	if len(m.CoverData) > 0 && len(m.CoverData) < 128 {
+		m.CoverData = nil
+	}
+
+	return nil
 }

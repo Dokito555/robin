@@ -202,7 +202,7 @@ func (p *Player) playTrack(track *storage.Track) error {
 
 		go func() {
 			if err := p.Next(); err != nil {
-				log.Printf("player: next track error: %w", err)
+				log.Printf("player: next track error: %v", err)
 			}
 		}()
 	})
