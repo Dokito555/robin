@@ -131,11 +131,15 @@ func (q *Queue) JumpTo(index int) *storage.Track {
 
 func (q *Queue) SetShuffle(on bool) {
 	q.mu.Lock()
-	defer q.mu.Unlock()
 
 	q.shuffle = on
 	if on {
 		q.doShuffle()
+	}
+
+	q.mu.Unlock()
+	
+	if on {
 		q.publish()
 	}
 }

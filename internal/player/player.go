@@ -201,8 +201,10 @@ func (p *Player) playTrack(track *storage.Track) error {
 		log.Printf("player: track ended %s", track.Title)
 
 		go func() {
+			// small delay ensures playTrack has fully returned and p.mu is released
+			time.Sleep(50 * time.Millisecond)
 			if err := p.Next(); err != nil {
-				log.Printf("player: next track error: %v", err)
+				log.Printf("player: auto-next error: %v", err)
 			}
 		}()
 	})
